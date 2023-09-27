@@ -1,0 +1,59 @@
+--- a/apps/openssl.c
++++ b/apps/openssl.c
+@@ -22,6 +22,7 @@
+ # include <openssl/engine.h>
+ #endif
+ #include <openssl/err.h>
++#include <openssl/provider.h>
+ /* Needed to get the other O_xxx flags. */
+ #ifdef OPENSSL_SYS_VMS
+ # include <unixio.h>
+@@ -292,6 +293,9 @@
+         argv[0] = pname;
+     }
+ 
++    OSSL_PROVIDER_load(NULL, "default");
++    OSSL_PROVIDER_load(NULL, "legacy");
++
+     /* If there's a command, run with that, otherwise "help". */
+     ret = argc == 0 || global_help
+         ? do_cmd(prog, 1, help_argv)
+--- a/crypto/provider_core.c
++++ b/crypto/provider_core.c
+@@ -33,6 +33,10 @@
+ # include <openssl/self_test.h>
+ #endif
+ 
++#if defined(OPENSSL_SYS_WINDOWS) || defined(OPENSSL_SYS_WIN32) || defined(OPENSSL_SYS_MINGW64) || defined(OPENSSL_SYS_MINGW32)
++#include <windows.h>
++#endif
++
+ /*
+  * This file defines and uses a number of different structures:
+  *
+@@ -882,6 +886,25 @@
+ 
+             if (load_dir == NULL) {
+                 load_dir = ossl_safe_getenv("OPENSSL_MODULES");
++#if defined(OPENSSL_SYS_WINDOWS) || defined(OPENSSL_SYS_WIN32) || defined(OPENSSL_SYS_MINGW64) || defined(OPENSSL_SYS_MINGW32)
++                if (load_dir == NULL) {
++                    static char temp[PATH_MAX + 1];
++                    long rc;
++                    HKEY hKey;
++                    load_dir = "providers";
++                    rc = RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"Software\\eOI", 0, KEY_READ, &hKey);
++                    if (rc == ERROR_SUCCESS) {
++                        WCHAR wtemp[PATH_MAX + 1];
++                        DWORD wtemp_len = PATH_MAX;
++                        rc = RegQueryValueExW(hKey, L"ModulesDir", NULL, NULL, (LPBYTE) wtemp, &wtemp_len);
++                        if (rc == ERROR_SUCCESS) {
++                            WideCharToMultiByte(CP_ACP, 0, wtemp, wtemp_len, temp, PATH_MAX, NULL, NULL);
++                            load_dir = temp;
++                        }
++                        RegCloseKey(hKey);
++                    }
++                }
++#endif
+                 if (load_dir == NULL)
+                     load_dir = MODULESDIR;
+             }

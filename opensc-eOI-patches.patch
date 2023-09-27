@@ -1,0 +1,602 @@
+--- a/configure.ac
++++ b/configure.ac
+@@ -983,11 +983,11 @@
+ 
+ if test "${with_pkcs11_provider}" = "detect"; then
+ 	if test "${WIN32}" != "yes"; then
+-		DEFAULT_PKCS11_PROVIDER="${libdir}/opensc-pkcs11${DYN_LIB_EXT}"
+-		DEFAULT_ONEPIN_PKCS11_PROVIDER="${libdir}/onepin-opensc-pkcs11${DYN_LIB_EXT}"
++		DEFAULT_PKCS11_PROVIDER="${libdir}/pkcs11/eOI-pkcs11${DYN_LIB_EXT}"
++		DEFAULT_ONEPIN_PKCS11_PROVIDER="${libdir}/pkcs11/onepin-eOI-pkcs11${DYN_LIB_EXT}"
+ 	else
+-		DEFAULT_PKCS11_PROVIDER="%PROGRAMFILES%\\\OpenSC Project\\\OpenSC\\\pkcs11\\\opensc-pkcs11.dll"
+-		DEFAULT_ONEPIN_PKCS11_PROVIDER="%PROGRAMFILES%\\\OpenSC Project\\\OpenSC\\\pkcs11\\\onepin-opensc-pkcs11.dll"
++		DEFAULT_PKCS11_PROVIDER="eOI-pkcs11.dll"
++		DEFAULT_ONEPIN_PKCS11_PROVIDER="onepin-eOI-pkcs11.dll"
+ 	fi
+ else
+ 	DEFAULT_PKCS11_PROVIDER="${with_pkcs11_provider}"
+@@ -1178,7 +1178,7 @@
+ 	src/pkcs11/Makefile
+ 	src/pkcs11/versioninfo-pkcs11.rc
+ 	src/pkcs11/versioninfo-pkcs11-spy.rc
+-	src/pkcs11/opensc-pkcs11.pc
++	src/pkcs11/eOI-pkcs11.pc
+ 	src/pkcs15init/Makefile
+ 	src/scconf/Makefile
+ 	src/tests/Makefile
+@@ -1192,7 +1192,7 @@
+ 	src/smm/Makefile
+ 	src/minidriver/Makefile
+ 	src/minidriver/versioninfo-minidriver.rc
+-	src/minidriver/opensc-minidriver.inf
++	src/minidriver/eOI-minidriver.inf
+ 	win32/Makefile
+ 	win32/versioninfo.rc
+ 	win32/versioninfo-customactions.rc
+--- a/src/libopensc/Makefile.am
++++ b/src/libopensc/Makefile.am
+@@ -4,7 +4,7 @@
+ 
+ EXTRA_DIST = Makefile.mak opensc.dll.manifest
+ 
+-lib_LTLIBRARIES = libopensc.la
++lib_LTLIBRARIES = libeOI.la
+ noinst_HEADERS = cards.h ctbcs.h internal.h muscle.h muscle-filesystem.h \
+ 	internal-winscard.h pkcs15-syn.h pkcs15-emulator-filter.h \
+ 	opensc.h pkcs15.h gp.h \
+@@ -16,7 +16,7 @@
+ 	card-eoi.h ccid-types.h reader-tr03119.h \
+ 	card-cac-common.h
+ 
+-AM_CPPFLAGS = -D'OPENSC_CONF_PATH="$(sysconfdir)/opensc.conf"' \
++AM_CPPFLAGS = -D'OPENSC_CONF_PATH="$(sysconfdir)/eOI.conf"' \
+      -D'DEFAULT_SM_MODULE_PATH="$(DEFAULT_SM_MODULE_PATH)"' \
+      -D'DEFAULT_SM_MODULE="$(DEFAULT_SM_MODULE)"' \
+ 	-I$(top_srcdir)/src
+@@ -24,7 +24,7 @@
+ 	$(OPTIONAL_PCSC_CFLAGS) $(OPTIONAL_ZLIB_CFLAGS)
+ AM_OBJCFLAGS = $(AM_CFLAGS)
+ 
+-libopensc_la_SOURCES_BASE = \
++libeOI_la_SOURCES_BASE = \
+ 	sc.c ctx.c log.c errors.c \
+ 	asn1.c base64.c sec.c card.c iso7816.c dir.c ef-atr.c \
+ 	ef-gdo.c padding.c apdu.c simpletlv.c gp.c \
+@@ -65,19 +65,19 @@
+ if ENABLE_CRYPTOTOKENKIT
+ # most platforms don't support objective C the way we needed.
+ # Only include it if needed
+-libopensc_la_SOURCES_BASE += reader-cryptotokenkit.m
++libeOI_la_SOURCES_BASE += reader-cryptotokenkit.m
+ endif
+-libopensc_la_LIBTOOLFLAGS = --tag CC
+-libopensc_static_la_LIBTOOLFLAGS = --tag CC
++libeOI_la_LIBTOOLFLAGS = --tag CC
++libeOI_static_la_LIBTOOLFLAGS = --tag CC
+ 
+-libopensc_la_SOURCES = $(libopensc_la_SOURCES_BASE) \
++libeOI_la_SOURCES = $(libeOI_la_SOURCES_BASE) \
+ 	libopensc.exports
+-libopensc_static_la_SOURCES = $(libopensc_la_SOURCES_BASE)
++libeOI_static_la_SOURCES = $(libeOI_la_SOURCES_BASE)
+ 
+ if WIN32
+-libopensc_la_SOURCES += $(top_builddir)/win32/versioninfo.rc
++libeOI_la_SOURCES += $(top_builddir)/win32/versioninfo.rc
+ endif
+-libopensc_la_LIBADD = $(OPENPACE_LIBS) $(OPTIONAL_OPENSSL_LIBS) \
++libeOI_la_LIBADD = $(OPENPACE_LIBS) $(OPTIONAL_OPENSSL_LIBS) \
+ 	$(OPTIONAL_OPENCT_LIBS) $(OPTIONAL_ZLIB_LIBS) \
+ 	$(top_builddir)/src/pkcs15init/libpkcs15init.la \
+ 	$(top_builddir)/src/scconf/libscconf.la \
+@@ -87,10 +87,10 @@
+ 	$(top_builddir)/src/sm/libsmeac.la \
+ 	$(top_builddir)/src/common/libcompat.la
+ if WIN32
+-libopensc_la_LIBADD += -lws2_32 -lshlwapi
++libeOI_la_LIBADD += -lws2_32 -lshlwapi -lcomctl32
+ endif
+-libopensc_static_la_LIBADD = $(libopensc_la_LIBADD)
+-libopensc_la_LDFLAGS = $(AM_LDFLAGS) \
++libeOI_static_la_LIBADD = $(libeOI_la_LIBADD)
++libeOI_la_LDFLAGS = $(AM_LDFLAGS) \
+ 	-version-info @OPENSC_LT_CURRENT@:@OPENSC_LT_REVISION@:@OPENSC_LT_AGE@ \
+ 	-export-symbols "$(srcdir)/libopensc.exports" \
+ 	-no-undefined
+@@ -98,11 +98,11 @@
+ if WIN32
+ # def file required for MS users to build library
+ mylibdir=$(libdir)
+-mylib_DATA=.libs/@WIN_LIBPREFIX@opensc-@OPENSC_LT_OLDEST@.dll.def
+-.libs/@WIN_LIBPREFIX@opensc-@OPENSC_LT_OLDEST@.dll.def:	libopensc.la
++mylib_DATA=.libs/@WIN_LIBPREFIX@eOI-@OPENSC_LT_OLDEST@.dll.def
++.libs/@WIN_LIBPREFIX@eOI-@OPENSC_LT_OLDEST@.dll.def:	libeOI.la
+ 
+ if ENABLE_MINIDRIVER
+-noinst_LTLIBRARIES = libopensc_static.la
++noinst_LTLIBRARIES = libeOI_static.la
+ endif
+ endif
+ 
+--- a/src/libopensc/ctx.c
++++ b/src/libopensc/ctx.c
+@@ -736,7 +736,7 @@
+ 	}
+ 	/* needs to be after the log file is known */
+ 	sc_log(ctx, "Used configuration file '%s'", conf_path);
+-	blocks = scconf_find_blocks(ctx->conf, NULL, "app", ctx->exe_path);
++	blocks = scconf_find_blocks(ctx->conf, NULL, "app", "opensc-pkcs11" /*ctx->exe_path*/);
+ 	if (blocks && blocks[0])
+ 		ctx->conf_blocks[count++] = blocks[0];
+ 	free(blocks);
+--- a/src/minidriver/Makefile.am
++++ b/src/minidriver/Makefile.am
+@@ -4,30 +4,30 @@
+ EXTRA_DIST = Makefile.mak versioninfo-minidriver.rc.in opensc-minidriver.dll.manifest
+ 
+ if ENABLE_MINIDRIVER
+-lib_LTLIBRARIES = opensc-minidriver@LIBRARY_BITNESS@.la
++lib_LTLIBRARIES = eOI-minidriver@LIBRARY_BITNESS@.la
+ # Do we need this on bin? Why can't we
+ # put it in dedicated directory
+-dist_sbin_SCRIPTS = opensc-minidriver.inf
++dist_sbin_SCRIPTS = eOI-minidriver.inf
+ else
+-dist_noinst_DATA = opensc-minidriver.inf
++dist_noinst_DATA = eOI-minidriver.inf
+ endif
+ 
+ AM_CFLAGS = $(OPTIONAL_OPENSSL_CFLAGS)
+ AM_CPPFLAGS = -I$(top_srcdir)/src
+ 
+-opensc_minidriver@LIBRARY_BITNESS@_la_SOURCES = minidriver.c minidriver.exports versioninfo-minidriver.rc
+-opensc_minidriver@LIBRARY_BITNESS@_la_LIBADD =  \
+-	$(top_builddir)/src/libopensc/libopensc_static.la \
++eOI_minidriver@LIBRARY_BITNESS@_la_SOURCES = minidriver.c minidriver.exports versioninfo-minidriver.rc
++eOI_minidriver@LIBRARY_BITNESS@_la_LIBADD =  \
++	$(top_builddir)/src/libopensc/libeOI_static.la \
+ 	$(OPTIONAL_OPENSSL_LIBS) \
+ 	-lbcrypt -lcrypt32 -lrpcrt4
+-opensc_minidriver@LIBRARY_BITNESS@_la_LDFLAGS = $(AM_LDFLAGS) \
++eOI_minidriver@LIBRARY_BITNESS@_la_LDFLAGS = $(AM_LDFLAGS) \
+ 	-export-symbols "$(srcdir)/minidriver.exports" \
+ 	-module -avoid-version -no-undefined
+ 
+ if ENABLE_MINIDRIVER
+ install-exec-hook:
+-	mv "$(DESTDIR)$(libdir)/opensc-minidriver@LIBRARY_BITNESS@.dll" "$(DESTDIR)$(bindir)/"
++	mv "$(DESTDIR)$(libdir)/eOI-minidriver@LIBRARY_BITNESS@.dll" "$(DESTDIR)$(bindir)/"
+ 
+ uninstall-hook:
+-	rm -f "$(DESTDIR)$(bindir)/opensc-minidriver@LIBRARY_BITNESS@.dll"
++	rm -f "$(DESTDIR)$(bindir)/eOI-minidriver@LIBRARY_BITNESS@.dll"
+ endif
+--- a/src/minidriver/Makefile.mak
++++ b/src/minidriver/Makefile.mak
+@@ -1,6 +1,6 @@
+ TOPDIR = ..\..
+ 
+-TARGET = opensc-minidriver.dll
++TARGET = eOI-minidriver.dll
+ OBJECTS = minidriver.obj versioninfo-minidriver.res
+ LIBS = $(TOPDIR)\src\libopensc\opensc_a.lib \
+ 	   $(TOPDIR)\src\scconf\scconf.lib \
+--- a/src/minidriver/opensc-minidriver.inf.in
++++ b/src/minidriver/opensc-minidriver.inf.in
+@@ -145,4 +145,4 @@
+ CardDeviceName="OpenSC Minidriver"
+ SmartCardName="SOFTWARE\Microsoft\Cryptography\Calais\SmartCards\Cev Westcos"
+ SmartCardNameWOW64="SOFTWARE\Wow6432Node\Microsoft\Cryptography\Calais\SmartCards\Cev Westcos"
+-SmartCardCardModule="opensc-minidriver.dll"
++SmartCardCardModule="eOI-minidriver.dll"
+--- a/src/minidriver/versioninfo-minidriver.rc.in
++++ b/src/minidriver/versioninfo-minidriver.rc.in
+@@ -37,7 +37,7 @@
+ 			VALUE "ProductName", "@OPENSC_VS_FF_PRODUCT_NAME@"
+ 			VALUE "ProductVersion", "@OPENSC_VERSION_MAJOR@,@OPENSC_VERSION_MINOR@,@OPENSC_VERSION_FIX@,@OPENSC_VERSION_REVISION@"
+ 			VALUE "SpecialBuild", ""
+-			VALUE "FileDescription", "OpenSC minidriver"
++			VALUE "FileDescription", "eOI minidriver"
+ 		END
+ 	END
+ 	BLOCK "VarFileInfo"
+--- a/src/pkcs11/Makefile.am
++++ b/src/pkcs11/Makefile.am
+@@ -1,10 +1,10 @@
+ include $(top_srcdir)/win32/ltrc.inc
+ 
+ MAINTAINERCLEANFILES = $(srcdir)/Makefile.in $(srcdir)/versioninfo-pkcs11.rc $(srcdir)/versioninfo-pkcs11-spy.rc
+-EXTRA_DIST = Makefile.mak versioninfo-pkcs11.rc.in versioninfo-pkcs11-spy.rc.in opensc-pkcs11.pc.in opensc-pkcs11.dll.manifest
++EXTRA_DIST = Makefile.mak versioninfo-pkcs11.rc.in versioninfo-pkcs11-spy.rc.in eOI-pkcs11.pc.in opensc-pkcs11.dll.manifest
+ 
+ if ENABLE_SHARED
+-lib_LTLIBRARIES = opensc-pkcs11.la pkcs11-spy.la
++lib_LTLIBRARIES = eOI-pkcs11.la pkcs11-spy.la
+ else
+ noinst_LTLIBRARIES = libopensc-pkcs11.la
+ endif
+@@ -19,7 +19,7 @@
+ OPENSC_PKCS11_CFLAGS = \
+ 	$(OPENPACE_CFLAGS) $(OPTIONAL_OPENSSL_CFLAGS) $(OPENSC_PKCS11_PTHREAD_CFLAGS)
+ OPENSC_PKCS11_LIBS = \
+-	$(top_builddir)/src/libopensc/libopensc.la \
++	$(top_builddir)/src/libopensc/libeOI.la \
+ 	$(top_builddir)/src/common/libscdl.la \
+ 	$(top_builddir)/src/common/libcompat.la \
+ 	$(OPENPACE_LIBS) $(OPTIONAL_OPENSSL_LIBS) $(PTHREAD_LIBS)
+@@ -28,13 +28,13 @@
+ endif
+ 
+ pkgconfigdir = $(libdir)/pkgconfig
+-pkgconfig_DATA = opensc-pkcs11.pc
++pkgconfig_DATA = eOI-pkcs11.pc
+ DISTCLEANFILES = $(pkgconfig_DATA)
+ 
+-opensc_pkcs11_la_SOURCES = $(OPENSC_PKCS11_SRC) $(OPENSC_PKCS11_INC)
+-opensc_pkcs11_la_CFLAGS = $(OPENSC_PKCS11_CFLAGS)
+-opensc_pkcs11_la_LIBADD = $(OPENSC_PKCS11_LIBS)
+-opensc_pkcs11_la_LDFLAGS = $(AM_LDFLAGS) \
++eOI_pkcs11_la_SOURCES = $(OPENSC_PKCS11_SRC) $(OPENSC_PKCS11_INC)
++eOI_pkcs11_la_CFLAGS = $(OPENSC_PKCS11_CFLAGS)
++eOI_pkcs11_la_LIBADD = $(OPENSC_PKCS11_LIBS)
++eOI_pkcs11_la_LDFLAGS = $(AM_LDFLAGS) \
+ 	-export-symbols "$(srcdir)/pkcs11.exports" \
+ 	-module -shared -avoid-version -no-undefined
+ 
+@@ -55,7 +55,7 @@
+ 	-module -shared -avoid-version -no-undefined
+ 
+ if WIN32
+-opensc_pkcs11_la_SOURCES += versioninfo-pkcs11.rc
++eOI_pkcs11_la_SOURCES += versioninfo-pkcs11.rc
+ pkcs11_spy_la_SOURCES += versioninfo-pkcs11-spy.rc
+ pkcs11_spy_la_LIBADD += -lshlwapi
+ endif
+@@ -63,32 +63,32 @@
+ if WIN32
+ install-exec-hook:
+ 	$(MKDIR_P) "$(DESTDIR)$(libdir)"
+-	for l in opensc-pkcs11.dll pkcs11-spy.dll; do \
++	for l in eOI-pkcs11.dll pkcs11-spy.dll; do \
+ 		mv "$(DESTDIR)$(libdir)/$$l" "$(DESTDIR)$(bindir)/$$l"; \
+ 	done
+ 
+ uninstall-hook:
+-	for l in opensc-pkcs11.dll pkcs11-spy.dll; do \
++	for l in eOI-pkcs11.dll pkcs11-spy.dll; do \
+ 		rm -f "$(DESTDIR)$(bindir)/$$l"; \
+ 	done
+ else
+ # see http://wiki.cacert.org/wiki/Pkcs11TaskForce
+ install-exec-hook:
+ 	cd $(DESTDIR)$(libdir) && \
+-	  rm -f "onepin-opensc-pkcs11$(DYN_LIB_EXT)" && \
+-	  $(LN_S) "opensc-pkcs11$(DYN_LIB_EXT)" "onepin-opensc-pkcs11$(DYN_LIB_EXT)"
++	  rm -f "onepin-eOI-pkcs11$(DYN_LIB_EXT)" && \
++	  $(LN_S) "eOI-pkcs11$(DYN_LIB_EXT)" "onepin-eOI-pkcs11$(DYN_LIB_EXT)"
+ 	$(MKDIR_P) "$(DESTDIR)$(pkcs11dir)"
+-	for l in opensc-pkcs11$(DYN_LIB_EXT) onepin-opensc-pkcs11$(DYN_LIB_EXT) pkcs11-spy$(DYN_LIB_EXT); do \
++	for l in eOI-pkcs11$(DYN_LIB_EXT) onepin-eOI-pkcs11$(DYN_LIB_EXT) pkcs11-spy$(DYN_LIB_EXT); do \
+ 		rm -f "$(DESTDIR)$(pkcs11dir)/$$l"; \
+ 		$(LN_S) ../$$l "$(DESTDIR)$(pkcs11dir)/$$l"; \
+ 	done
+ 
+ uninstall-hook:
+-	for l in opensc-pkcs11$(DYN_LIB_EXT) onepin-opensc-pkcs11$(DYN_LIB_EXT) pkcs11-spy$(DYN_LIB_EXT); do \
++	for l in eOI-pkcs11$(DYN_LIB_EXT) onepin-eOI-pkcs11$(DYN_LIB_EXT) pkcs11-spy$(DYN_LIB_EXT); do \
+ 		rm -f "$(DESTDIR)$(pkcs11dir)/$$l"; \
+ 	done
+ 	rm -df "$(DESTDIR)$(pkcs11dir)" || true
+-	rm -f "$(DESTDIR)$(libdir)/onepin-opensc-pkcs11$(DYN_LIB_EXT)"
++	rm -f "$(DESTDIR)$(libdir)/onepin-eOI-pkcs11$(DYN_LIB_EXT)"
+ endif
+ 
+ TIDY_FLAGS = $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) $(OPENSC_PKCS11_CFLAGS)
+--- a/src/pkcs11/Makefile.mak
++++ b/src/pkcs11/Makefile.mak
+@@ -1,6 +1,6 @@
+ TOPDIR = ..\..
+ 
+-TARGET1			= opensc-pkcs11.dll
++TARGET1			= eOI-pkcs11.dll
+ TARGET3			= pkcs11-spy.dll
+ 
+ OBJECTS			= pkcs11-global.obj pkcs11-session.obj pkcs11-object.obj misc.obj slot.obj \
+--- a/src/pkcs11/opensc-pkcs11.pc.in
++++ b/src/pkcs11/opensc-pkcs11.pc.in
+@@ -6,4 +6,4 @@
+ Name: OpenSC smartcard framework
+ Description: OpenSC PKCS#11 module
+ Version: @VERSION@
+-Libs: -L${libdir} -lopensc-pkcs11
++Libs: -L${libdir} -leOI-pkcs11
+--- a/src/pkcs11/pkcs11-global.c
++++ b/src/pkcs11/pkcs11-global.c
+@@ -46,7 +46,7 @@
+ #endif
+ 
+ #ifndef MODULE_APP_NAME
+-#define MODULE_APP_NAME "opensc-pkcs11"
++#define MODULE_APP_NAME "eOI-pkcs11"
+ #endif
+ 
+ sc_context_t *context = NULL;
+--- a/src/pkcs11/versioninfo-pkcs11.rc.in
++++ b/src/pkcs11/versioninfo-pkcs11.rc.in
+@@ -27,7 +27,7 @@
+ 			VALUE "ProductName", "@OPENSC_VS_FF_PRODUCT_NAME@"
+ 			VALUE "ProductVersion", "@OPENSC_VERSION_MAJOR@,@OPENSC_VERSION_MINOR@,@OPENSC_VERSION_FIX@,@OPENSC_VERSION_REVISION@"
+ 			VALUE "SpecialBuild", ""
+-			VALUE "FileDescription", "OpenSC PKCS#11 module"
++			VALUE "FileDescription", "eOI PKCS#11 module"
+ 		END
+ 	END
+ 	BLOCK "VarFileInfo"
+--- a/src/smm/Makefile.am
++++ b/src/smm/Makefile.am
+@@ -7,7 +7,7 @@
+ AM_CFLAGS = $(OPTIONAL_OPENSSL_CFLAGS) $(OPTIONAL_READLINE_CFLAGS)
+ AM_CPPFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/src/common -I$(top_builddir)/src/include
+ LIBS = $(top_builddir)/src/sm/libsm.la \
+-	$(top_builddir)/src/libopensc/libopensc.la \
++	$(top_builddir)/src/libopensc/libeOI.la \
+ 	$(top_builddir)/src/common/libcompat.la
+ 
+ if ENABLE_OPENSSL
+--- a/src/tests/Makefile.am
++++ b/src/tests/Makefile.am
+@@ -9,7 +9,7 @@
+ AM_CPPFLAGS = -I$(top_srcdir)/src
+ AM_CFLAGS = $(OPTIONAL_OPENSSL_CFLAGS)
+ LIBS = \
+-	$(top_builddir)/src/libopensc/libopensc.la \
++	$(top_builddir)/src/libopensc/libeOI.la \
+ 	$(top_builddir)/src/common/libscdl.la \
+ 	$(top_builddir)/src/common/libcompat.la
+ 
+--- a/src/tests/fuzzing/Makefile.am
++++ b/src/tests/fuzzing/Makefile.am
+@@ -2,7 +2,7 @@
+ 				-D'DEFAULT_PKCS11_PROVIDER="$(DEFAULT_PKCS11_PROVIDER)"'
+ AM_CFLAGS = -g -O0 $(OPTIONAL_OPENSSL_CFLAGS) $(OPTIONAL_READLINE_CFLAGS) $(PTHREAD_CFLAGS)
+ LIBS = $(FUZZING_LIBS)\
+-	$(top_builddir)/src/libopensc/libopensc.la \
++	$(top_builddir)/src/libopensc/libeOI.la \
+ 	$(top_builddir)/src/common/libscdl.la \
+ 	$(top_builddir)/src/pkcs15init/libpkcs15init.la \
+ 	$(top_builddir)/src/common/libcompat.la
+--- a/src/tests/unittests/Makefile.am
++++ b/src/tests/unittests/Makefile.am
+@@ -24,7 +24,7 @@
+ 	$(OPTIONAL_OPENSSL_CFLAGS) \
+ 	$(CMOCKA_CFLAGS)
+ AM_CPPFLAGS =$(CODE_COVERAGE_CPPFLAGS)
+-LDADD = $(top_builddir)/src/libopensc/libopensc.la \
++LDADD = $(top_builddir)/src/libopensc/libeOI.la \
+ 	$(CODE_COVERAGE_LIBS) \
+ 	$(OPTIONAL_OPENSSL_LIBS) \
+ 	$(CMOCKA_LIBS)
+--- a/src/tools/Makefile.am
++++ b/src/tools/Makefile.am
+@@ -28,7 +28,7 @@
+ 	egk-tool-cmdline.h goid-tool-cmdline.h npa-tool-cmdline.h \
+ 	opensc-asn1-cmdline.h opensc-notify-cmdline.h pkcs11-register-cmdline.h \
+ 	openpgp-tool-helpers.h
+-bin_PROGRAMS = opensc-tool opensc-explorer opensc-asn1 \
++bin_PROGRAMS = eOI-tool opensc-explorer opensc-asn1 \
+ 	pkcs15-tool pkcs15-crypt pkcs11-tool pkcs11-register \
+ 	cardos-tool eidenv openpgp-tool iasecc-tool egk-tool goid-tool
+ if ENABLE_OPENSSL
+@@ -40,7 +40,7 @@
+ endif
+ 
+ if ENABLE_NOTIFY
+-bin_PROGRAMS += opensc-notify
++bin_PROGRAMS += eOI-notify
+ endif
+ 
+ if ENABLE_OPENPACE
+@@ -51,15 +51,15 @@
+ AM_CFLAGS = $(OPTIONAL_OPENSSL_CFLAGS) $(OPTIONAL_READLINE_CFLAGS)
+ AM_CPPFLAGS = -I$(top_srcdir)/src -D'DEFAULT_PKCS11_PROVIDER="$(DEFAULT_PKCS11_PROVIDER)"' -D'DEFAULT_ONEPIN_PKCS11_PROVIDER="$(DEFAULT_ONEPIN_PKCS11_PROVIDER)"'
+ LIBS = \
+-	$(top_builddir)/src/libopensc/libopensc.la \
++	$(top_builddir)/src/libopensc/libeOI.la \
+ 	$(top_builddir)/src/common/libscdl.la \
+ 	$(top_builddir)/src/common/libcompat.la
+ 
+ sceac_example_SOURCES = sceac-example.c
+-sceac_example_LDADD = $(top_builddir)/src/libopensc/libopensc.la $(OPENPACE_LIBS)
++sceac_example_LDADD = $(top_builddir)/src/libopensc/libeOI.la $(OPENPACE_LIBS)
+ sceac_example_CFLAGS = -I$(top_srcdir)/src $(OPENPACE_CFLAGS)
+ 
+-opensc_tool_SOURCES = opensc-tool.c util.c
++eOI_tool_SOURCES = opensc-tool.c util.c
+ piv_tool_SOURCES = piv-tool.c util.c
+ piv_tool_LDADD = $(OPTIONAL_OPENSSL_LIBS)
+ opensc_explorer_SOURCES = opensc-explorer.c util.c
+@@ -107,10 +107,10 @@
+ npa_tool_CFLAGS += -Wno-unknown-warning-option
+ endif
+ 
+-opensc_notify_SOURCES = opensc-notify.c opensc-notify-cmdline.c
+-opensc_notify_CFLAGS = $(PTHREAD_CFLAGS)
++eOI_notify_SOURCES = opensc-notify.c opensc-notify-cmdline.c
++eOI_notify_CFLAGS = $(PTHREAD_CFLAGS)
+ if HAVE_UNKNOWN_WARNING_OPTION
+-opensc_notify_CFLAGS += -Wno-unknown-warning-option
++eOI_notify_CFLAGS += -Wno-unknown-warning-option
+ endif
+ 
+ egk_tool_SOURCES = egk-tool.c util.c egk-tool-cmdline.c
+@@ -146,7 +146,7 @@
+ 
+ if WIN32
+ LIBS += -lshlwapi
+-opensc_tool_SOURCES += versioninfo-tools.rc
++eOI_tool_SOURCES += versioninfo-tools.rc
+ piv_tool_SOURCES += versioninfo-tools.rc
+ opensc_explorer_SOURCES += versioninfo-tools.rc
+ pkcs15_tool_SOURCES += versioninfo-tools.rc
+@@ -163,7 +163,7 @@
+ iasecc_tool_SOURCES += versioninfo-tools.rc
+ sc_hsm_tool_SOURCES += versioninfo-tools.rc
+ gids_tool_SOURCES += versioninfo-tools.rc
+-opensc_notify_SOURCES += versioninfo-opensc-notify.rc
++eOI_notify_SOURCES += versioninfo-opensc-notify.rc
+ endif
+ 
+ applicationsdir = $(datadir)/applications
+--- a/src/tools/opensc-notify-cmdline.c
++++ b/src/tools/opensc-notify-cmdline.c
+@@ -27,7 +27,7 @@
+ 
+ const char *gengetopt_args_info_purpose = "";
+ 
+-const char *gengetopt_args_info_usage = "Usage: opensc-notify [OPTION]...";
++const char *gengetopt_args_info_usage = "Usage: eOI-notify [OPTION]...";
+ 
+ const char *gengetopt_args_info_versiontext = "";
+ 
+--- a/src/tools/opensc-notify.c
++++ b/src/tools/opensc-notify.c
+@@ -65,7 +65,7 @@
+ 	const int timeout = 2000;
+ #endif
+ 
+-	r = sc_establish_context(&ctx, "opensc-notify");
++	r = sc_establish_context(&ctx, "eOI-notify");
+ 	if (r < 0 || !ctx) {
+ 		fprintf(stderr, "Failed to create initial context: %s", sc_strerror(r));
+ 		return;
+@@ -148,7 +148,7 @@
+ int WINAPI
+ WinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPSTR lpCmdLine, int nShowCmd)
+ {
+-	LPCTSTR lpszClassName = "OPENSC_NOTIFY_CLASS";
++	LPCTSTR lpszClassName = "eOI_NOTIFY_CLASS";
+ 	HWND hwnd = create_invisible_window(lpszClassName, WndProc, hInstance);
+ 
+ 	sc_notify_init();
+--- a/src/tools/opensc-notify.ggo.in
++++ b/src/tools/opensc-notify.ggo.in
+@@ -1,4 +1,4 @@
+-package "opensc-notify"
++package "eOI-notify"
+ purpose "@PACKAGE_SUMMARY@"
+ description "If no arguments are given, monitor smart card events and send the appropriate notification."
+ 
+@@ -23,19 +23,19 @@
+     optional
+ 
+ modeoption "notify-card-inserted"    I
+-    "See notify_card_inserted in opensc.conf"
++    "See notify_card_inserted in eOI.conf"
+     flag off
+     mode="standard"
+ modeoption "notify-card-removed"  R
+-    "See notify_card_removed in opensc.conf"
++    "See notify_card_removed in eOI.conf"
+     flag off
+     mode="standard"
+ modeoption "notify-pin-good"  G
+-    "See notify_pin_good in opensc.conf"
++    "See notify_pin_good in eOI.conf"
+     flag off
+     mode="standard"
+ modeoption "notify-pin-bad"  B
+-    "See notify_pin_bad in opensc.conf"
++    "See notify_pin_bad in eOI.conf"
+     flag off
+     mode="standard"
+ 
+--- a/src/tools/opensc-tool.c
++++ b/src/tools/opensc-tool.c
+@@ -40,7 +40,7 @@
+ 	const char *str;
+ } id2str_t;
+ 
+-static const char *app_name = "opensc-tool";
++static const char *app_name = "eOI-tool";
+ 
+ static int	opt_wait = 0;
+ static char **	opt_apdus;
+--- a/src/tools/pkcs11-tool.c
++++ b/src/tools/pkcs11-tool.c
+@@ -3920,7 +3920,7 @@
+ }
+ #endif
+ 
+-#define MAX_OBJECT_SIZE	5000
++#define MAX_OBJECT_SIZE	32767
+ 
+ /* Currently for certificates (-type cert), private keys (-type privkey),
+    public keys (-type pubkey) and data objects (-type data). */
+--- a/src/tools/versioninfo-opensc-notify.rc.in
++++ b/src/tools/versioninfo-opensc-notify.rc.in
+@@ -37,7 +37,7 @@
+ 			VALUE "ProductName", "@OPENSC_VS_FF_PRODUCT_NAME@"
+ 			VALUE "ProductVersion", "@OPENSC_VERSION_MAJOR@,@OPENSC_VERSION_MINOR@,@OPENSC_VERSION_FIX@,@OPENSC_VERSION_REVISION@"
+ 			VALUE "SpecialBuild", ""
+-			VALUE "FileDescription", "OpenSC Notify"
++			VALUE "FileDescription", "eOI Notify"
+ 		END
+ 	END
+ 	BLOCK "VarFileInfo"
+--- a/src/tools/versioninfo-tools.rc.in
++++ b/src/tools/versioninfo-tools.rc.in
+@@ -27,7 +27,7 @@
+ 			VALUE "ProductName", "@OPENSC_VS_FF_PRODUCT_NAME@"
+ 			VALUE "ProductVersion", "@OPENSC_VERSION_MAJOR@,@OPENSC_VERSION_MINOR@,@OPENSC_VERSION_FIX@,@OPENSC_VERSION_REVISION@"
+ 			VALUE "SpecialBuild", ""
+-			VALUE "FileDescription", "OpenSC command line tool"
++			VALUE "FileDescription", "eOI command line tool"
+ 		END
+ 	END
+ 	BLOCK "VarFileInfo"
+--- a/src/ui/notify.c
++++ b/src/ui/notify.c
+@@ -72,8 +72,8 @@
+ #include <shellapi.h>
+ #include <shlwapi.h>
+ 
+-// {83C35893-99C6-4600-BFDB-45925C53BDD9}
+-static const GUID myGUID = { 0x83c35893, 0x99c6, 0x4600, { 0xbf, 0xdb, 0x45, 0x92, 0x5c, 0x53, 0xbd, 0xd9 } };
++// {83C35893-99C6-4600-BFDB-45925C53BDCF}
++static const GUID myGUID = { 0x83c35893, 0x99c6, 0x4600, { 0xbf, 0xdb, 0x45, 0x92, 0x5c, 0x53, 0xbd, 0xcf } };
+ HINSTANCE sc_notify_instance = NULL;
+ HWND sc_notify_hwnd = NULL;
+ BOOL delete_icon = TRUE;
+@@ -130,7 +130,7 @@
+ 
+ static BOOL AddNotificationIcon(void)
+ {
+-	NOTIFYICONDATA nid = {0};
++	NOTIFYICONDATA nid = {0}, nidDel = {0};
+ 	TCHAR path[MAX_PATH]={0};
+ 	BOOL r;
+ 
+@@ -152,9 +152,9 @@
+ 		const char *basename = strrchr(path, '\\');
+ 		if (basename) {
+ 			basename++;
+-			if (0 != strcmp(basename, "opensc-notify.exe")) {
++			if (0 != strcmp(basename, "eOI-notify.exe")) {
+ 				/* Allow creation of system tray icon only for
+-				 * "opensc-notify.exe" to avoid creation of the same icon by
++				 * "eOI-notify.exe" to avoid creation of the same icon by
+ 				 * multiple processes. */
+ 				delete_icon = FALSE;
+ 				return FALSE;
+--- a/win32/versioninfo.rc.in
++++ b/win32/versioninfo.rc.in
+@@ -27,7 +27,7 @@
+ 			VALUE "ProductName", "@OPENSC_VS_FF_PRODUCT_NAME@"
+ 			VALUE "ProductVersion", "@OPENSC_VERSION_MAJOR@,@OPENSC_VERSION_MINOR@,@OPENSC_VERSION_FIX@,@OPENSC_VERSION_REVISION@"
+ 			VALUE "SpecialBuild", ""
+-			VALUE "FileDescription", "OpenSC common usage application extension"
++			VALUE "FileDescription", "eOI common usage application extension"
+ 		END
+ 	END
+ 	BLOCK "VarFileInfo"

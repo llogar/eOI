@@ -1,0 +1,20 @@
+--- a/src/tools/pkcs15-init.c
++++ b/src/tools/pkcs15-init.c
+@@ -58,6 +58,7 @@
+ #ifndef OPENSSL_NO_EC
+ #include <openssl/ec.h>
+ #endif /* OPENSSL_NO_EC */
++#include <openssl/provider.h>
+ 
+ #include "common/compat_strlcpy.h"
+ #include "libopensc/internal.h"
+@@ -458,6 +459,9 @@
+ 		util_fatal("Unable to seed random number pool for key generation");
+ #endif
+ 
++	OSSL_PROVIDER_load(NULL, "default");
++	OSSL_PROVIDER_load(NULL, "legacy");
++
+ 	parse_commandline(argc, argv);
+ 
+ 	if (optind != argc)

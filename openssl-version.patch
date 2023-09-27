@@ -1,0 +1,33 @@
+--- a/VERSION.dat
++++ b/VERSION.dat
+@@ -1,7 +1,6 @@
+ MAJOR=3
+ MINOR=0
+ PATCH=8
+-PRE_RELEASE_TAG=dev
++PRE_RELEASE_TAG=eOI
+ BUILD_METADATA=
+-RELEASE_DATE="1 Nov 2022"
+ SHLIB_VERSION=3
+--- a/crypto/cversion.c
++++ b/crypto/cversion.c
+@@ -11,6 +11,8 @@
+ 
+ #include "buildinf.h"
+ 
++#undef OPENSSLDIR
++
+ unsigned long OpenSSL_version_num(void)
+ {
+     return OPENSSL_VERSION_NUMBER;
+--- a/include/openssl/opensslv.h.in
++++ b/include/openssl/opensslv.h.in
+@@ -87,7 +87,7 @@
+  * SECTION 4: BACKWARD COMPATIBILITY
+  */
+ 
+-# define OPENSSL_VERSION_TEXT "OpenSSL {- "$config{full_version} $config{release_date}" -}"
++# define OPENSSL_VERSION_TEXT "OpenSSL {- "$config{full_version}" -}"
+ 
+ /* Synthesize OPENSSL_VERSION_NUMBER with the layout 0xMNN00PPSL */
+ # ifdef OPENSSL_VERSION_PRE_RELEASE

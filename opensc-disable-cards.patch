@@ -1,0 +1,1098 @@
+--- a/etc/opensc.conf.example.in
++++ b/etc/opensc.conf.example.in
+@@ -46,18 +46,6 @@
+ 	# Default: empty
+ 	# ignored_readers = "CardMan 1021", "SPR 532";
+ 
+-	# CT-API module configuration.
+-	reader_driver ctapi {
+-		# module @LIBDIR@@LIB_PRE@towitoko@DYN_LIB_EXT@ {
+-			# CT-API ports:
+-			# 0..3		COM1..4
+-			# 4		Printer
+-			# 5		Modem
+-			# 6..7		LPT1..2
+-			# ports = 0;
+-		# }
+-	}
+-
+ 	# The following section shows definitions for PC/SC readers.
+ 	reader_driver pcsc {
+ 		# Limit command and response sizes. Some Readers don't propagate their
+@@ -110,29 +98,6 @@
+ 		# provider_library = @DEFAULT_PCSC_PROVIDER@
+ 	}
+ 
+-	# Options for OpenCT support
+-	reader_driver openct {
+-		# Virtual readers to allocate.
+-		# Default: 2
+-		# readers = 5;
+-		#
+-		# Limit command and response sizes.
+-		# Default: n/a
+-		# max_send_size = 255;
+-		# max_recv_size = 256;
+-	}
+-
+-	# Options for CryptoTokenKit support
+-	reader_driver cryptotokenkit {
+-		# Limit command and response sizes. Some Readers don't propagate their
+-		# transceive capabilities correctly. max_send_size and max_recv_size
+-		# allow setting the limits manually, for example to enable extended
+-		# length capabilities.
+-		# Default: autodetect
+-		# max_send_size = 65535;
+-		# max_recv_size = 65536;
+-	}
+-
+ 	# Allowlist of card drivers to load at start-up
+ 	#
+ 	# The supported internal card driver names can be retrieved
+@@ -149,67 +114,7 @@
+ 	# Default: internal
+ 	# NOTE: When "internal" keyword is used, must be last entry
+ 	#
+-	#card_drivers = old, internal;
+-
+-	# Card driver configuration blocks.
+-
+-	# For card drivers loaded from an external shared library/DLL,
+-	# you need to specify the path name of the module
+-	#
+-	# card_driver customcos {
+-		# The location of the driver library
+-		# module = @LIBDIR@@LIB_PRE@card_customcos@DYN_LIB_EXT@;
+-	# }
+-
+-	card_driver npa {
+-		# German ID card requires the CAN to be verified before QES PIN. This,
+-		# however, is not part of the PKCS#15 profile of the card. So for
+-		# verifying the QES PIN we actually need both. The CAN may be given
+-		# here. If the CAN is not given here, it will be prompted on the
+-		# command line or on the reader (depending on the reader's
+-		# capabilities).
+-		#
+-		#can = 222222;
+-
+-		# QES is only possible with a Comfort Reader (CAT-K), which holds a
+-		# cryptographic key to authenticate itself as signature terminal (ST).
+-		# We usually will use the reader's capability to sign the data.
+-		# However, during development you may specify soft certificates and
+-		# keys for a ST below.
+-		# The following example EAC PKI can be found in vicc's example data:
+-		# https://github.com/frankmorgner/vsmartcard/tree/master/virtualsmartcard/npa-example-data
+-		#
+-		#st_dv_certificate = ZZSTDVCA00001.cvcert;
+-		#st_certificate = ZZSTTERM00001.cvcert;
+-		#st_key = ZZSTTERM00001.pkcs8;
+-	}
+-
+-	# Configuration block for DNIe
+-	#
+-	# Card DNIe has an option to show an extra warning before
+-	# issuing a signature.
+-
+-	card_driver dnie {
+-		# Disable / enable warning message when performing a
+-		# signature operation with the DNIe.
+-		# Only used if compiled with --enable-dnie-ui
+-		# user_consent_enabled = yes;
+-
+-		# Specify the pinentry application to use if warning
+-		# is configured to be displayed using pinentry.
+-		# Default: /usr/bin/pinentry
+-		# Only used if compiled with --enable-dnie-ui
+-		# user_consent_app = "/usr/bin/pinentry";
+-	}
+-
+-	card_driver edo {
+-		# CAN is required to establish connection
+-		# with the card. It might be overridden by
+-		# EDO_CAN environment variable. Currently,
+-		# it is not possible to set it in any other way.
+-		#
+-		#can = 123456;
+-	}
++	card_drivers = internal;
+ 
+ 	card_driver eoi {
+ 		# CAN is required to establish connection
+@@ -226,686 +131,6 @@
+ 		# in the 'pkcs11' section below
+ 	}
+ 
+-	card_driver PIV-II {
+-		# *NOTE* The following are only usable if OpenSC is configured with --enable-piv-sm
+-
+-		# "piv_pairing_code"
+-		# Virtual Contact Interface (VCI) an optional feature, to allow
+-		# contactless access to card as if it was using the contact reader.
+-		# VCI requires SM. It may also require a pairing code which may be printed on the
+-		# card, given to card owner when card issued or available from the card when used
+-		# with a contact reader. Contact your card issuing agency for details on what your
+-		# card supports.
+-		# Pairing code can be set in opensc.conf or via environment (recommended).
+-		# It is an 8 digit string.
+-		# Default: no pairing code.
+-		# piv_pairing_code = 12345678;
+-		# May be set via environment: PIV_PAIRING_CODE=12345678
+-
+-		# Environment variables override opensc.conf
+-	}
+-
+-	# In addition to the built-in list of known cards in the
+-	# card driver, you can configure a new card for the driver
+-	# using the card_atr block. The goal is to centralize
+-	# everything related to a certain card to card_atr.
+-	#
+-	# The supported internal card driver names can be retrieved
+-	# from the output of:
+-	# $ opensc-tool --list-drivers
+-
+-	# Generic format: card_atr <hex encoded ATR (case-sensitive!)>
+-
+-	# New card entry for the flex card driver
+-	# card_atr 3b:f0:0d:ca:fe {
+-		# All parameters for the context are
+-		# optional unless specified otherwise.
+-
+-		# Context: global, card driver
+-		#
+-		# ATR mask value
+-		#
+-		# The mask is logically AND'd with an
+-		# card ATR prior to comparison with the
+-		# ATR reference value above. Using mask
+-		# allows identifying and configuring
+-		# multiple ATRs as the same card model.
+-		# atrmask = "ff:ff:ff:ff:ff";
+-
+-		# Context: card driver
+-		#
+-		# Specify used card driver (REQUIRED).
+-		#
+-		# When enabled, overrides all possible
+-		# settings from the card drivers built-in
+-		# card configuration list.
+-		# driver = "flex";
+-
+-		# Set card name for card drivers that allows it.
+-		# name = "My CryptoFlex card";
+-
+-		# Card type as an integer value.
+-		#
+-		# Depending on card driver, this allows
+-		# tuning the behaviour of the card driver
+-		# for your card.
+-		# type = "2002";
+-
+-		# Card flags as an hex value.
+-		# Multiple values are OR'd together.
+-		#
+-		# Depending on card driver, this allows
+-		# fine-tuning the capabilities in
+-		# the card driver for your card.
+-		#
+-		# Optionally, some known parameters
+-		# can be specified as strings:
+-		#
+-		# rng - On-board random number source
+-		# keep_alive - Request the card driver to send a "keep alive" command before each transaction to make sure that the required applet is still selected.
+-		#
+-		# flags = "rng", "keep_alive", "0x80000000";
+-
+-		#
+-		# Context: PKCS#15 emulation layer
+-		#
+-		# When using PKCS#15 emulation, force
+-		# the emulation driver for specific cards.
+-		#
+-		# Required for external drivers, but can
+-		# be used with built-in drivers, too.
+-		# pkcs15emu = "custom";
+-
+-		#
+-		# Context: reader driver
+-		#
+-		# Force protocol selection for specific cards.
+-		# Known parameters: t0, t1, raw
+-		# force_protocol = "t0";
+-
+-		# Context: minidriver
+-		#
+-		# read_only: Mark card as read/only card in Minidriver/BaseCSP interface (Default: false)
+-		# md_supports_X509_enrollment: Indicate X509 enrollment support at Minidriver/BaseCSP interface (Default: false)
+-		# md_guid_as_id: Use the GUID generated for the key as id in the PKCS#15 structure (Default: false, i.e. auto generated)
+-		# md_guid_as_label: Use the GUID generated for the key as label in the PKCS#15 structure (Default: false, i.e. no label set)
+-		# md_supports_container_key_gen: Card allows generating key pairs on the card (Default: false)
+-		# md_supports_container_key_import: Card allows importing private keys (Default: false)
+-		#
+-		# Window title of the PIN pad dialog
+-		# Default: "Windows Security"
+-		# md_pinpad_dlg_title = "Title";
+-		#
+-		# Filename of the icon for the PIN pad dialog; use "" for no icon
+-		# Default: Built-in smart card icon
+-		# md_pinpad_dlg_icon = "";
+-		#
+-		# Main instruction of the PIN pad dialog
+-		# Default: "OpenSC Smart Card Provider"
+-		# md_pinpad_dlg_main = "Main";
+-		#
+-		# Content of the PIN pad dialog for role "user"
+-		# Default: "Please verify your fingerprint or PIN on the card."
+-		# md_pinpad_dlg_content_user = "Content User";
+-		#
+-		# Content of the PIN pad dialog for role "user+signature"
+-		# Default: "Please verify your fingerprint or PIN for the digital signature PIN on the card."
+-		# md_pinpad_dlg_content_user_sign = "Content User+Sign";
+-		#
+-		# Content of the PIN pad dialog for role "admin"
+-		# Default: "Please enter your PIN to unblock the user PIN on the PINPAD."
+-		# md_pinpad_dlg_content_admin = "Content Admin";
+-		#
+-		# Expanded information of the PIN pad dialog
+-		# Default: "This window will be closed automatically after the PIN has been submitted on the PINPAD (timeout typically after 30 seconds)."
+-		# md_pinpad_dlg_expanded = "Expanded Information";
+-		#
+-		# Allow the user to cancel the PIN pad dialog by not immediately requesting the PIN on the PIN pad
+-		# Default: false
+-		# md_pinpad_dlg_enable_cancel = true;
+-		#
+-		# Content of the verification of the PIN pad dialog
+-		# Default: "Automatically request PIN immediately on PIN-Pad"
+-		# md_pinpad_dlg_verification = "Verification";
+-		#
+-		# Time in seconds for the progress bar of the PIN pad dialog to tick. "0" removes the progress bar.
+-		# Default: 30
+-		# md_pinpad_dlg_timeout = 0;
+-
+-		# Notification title and text when card was inserted
+-		# Default: "Smart card detected"
+-		# notify_card_inserted = "inserted title";
+-		# Default: ATR of the card
+-		# notify_card_inserted_text = "inserted text";
+-		#
+-		# Notification title and text when card was removed
+-		# Default: "Smart card removed"
+-		# notify_card_removed = "card removed";
+-		# Default: Name of smart card reader
+-		# notify_card_removed_text = "removed text";
+-		#
+-		# Notification title and text when PIN was verified
+-		# Default: "PIN verified"
+-		# notify_pin_good = "good PIN";
+-		# Default: "Smart card is unlocked"
+-		# notify_pin_good_text = "good text";
+-		#
+-		# Notification title and text when PIN was wrong
+-		# Default: "PIN not verified"
+-		# notify_pin_bad = "bad PIN";
+-		# Default: "Smart card is locked"
+-		# notify_pin_bad_text = "bad text";
+-	# }
+-
+-	# Yubikey is known to have the PIV applet and the OpenPGP applet. OpenSC
+-	# can handle both to access keys and certificates, but only one at a time.
+-	card_atr 3b:f8:13:00:00:81:31:fe:15:59:75:62:69:6b:65:79:34:d4 {
+-		name = "Yubikey 4";
+-		# Select the PKI applet to use ("PIV-II" or "openpgp")
+-		driver = "PIV-II";
+-		# Recover from other applications accessing a different applet
+-		flags = "keep_alive";
+-	}
+-	card_atr 3b:fc:13:00:00:81:31:fe:15:59:75:62:69:6b:65:79:4e:45:4f:72:33:e1 {
+-		name = "Yubikey Neo";
+-		# Select the PKI applet to use ("PIV-II" or "openpgp")
+-		driver = "PIV-II";
+-		# Recover from other applications accessing a different applet
+-		flags = "keep_alive";
+-	}
+-	card_atr 3b:8c:80:01:59:75:62:69:6b:65:79:4e:45:4f:72:33:58 {
+-		atrmask = "FF:FF:FF:FF:FF:FF:FF:FF:FF:FF:FF:FF:FF:FF:FF:00:00";
+-		name = "Yubikey Neo";
+-		# Select the PKI applet to use ("PIV-II" or "openpgp")
+-		driver = "PIV-II";
+-		# Recover from other applications accessing a different applet
+-		flags = "keep_alive";
+-	}
+-
+-	# Oberthur's AuthentIC v3.2.2
+-	card_atr 3B:DD:18:00:81:31:FE:45:80:F9:A0:00:00:00:77:01:00:70:0A:90:00:8B {
+-		type = 11100;
+-		driver = "authentic";
+-		name = "AuthentIC v3.1";
+-
+-		# Name of SM configuration sub-section
+-		# secure_messaging = local_authentic;
+-	}
+-
+-	# IAS/ECC cards
+-	card_atr 3B:7F:96:00:00:00:31:B9:64:40:70:14:10:73:94:01:80:82:90:00 {
+-		type = 25001;
+-		driver = "iasecc";
+-		name = "Gemalto MultiApp IAS/ECC v1.0.1";
+-		secure_messaging = local_gemalto_iam;
+-		# secure_messaging = local_adele;
+-		read_only = false;
+-		md_supports_X509_enrollment = true;
+-	}
+-	card_atr 3B:7F:96:00:00:00:31:B8:64:40:70:14:10:73:94:01:80:82:90:00 {
+-		type = 25001;
+-		driver = "iasecc";
+-		name = "Gemalto MultiApp IAS/ECC v1.0.1";
+-		secure_messaging = local_gemalto_iam;
+-		read_only = false;
+-		md_supports_X509_enrollment = true;
+-	}
+-	#card_atr 3B:DD:18:00:81:31:FE:45:80:F9:A0:00:00:00:77:01:08:00:07:90:00:FE {
+-	#	type = 25002;
+-	#	driver = "iasecc";
+-	#	name = "Oberthur IAS/ECC v1.0.1";
+-	#	# No 'admin' application for this card -- no secure messaging
+-	#}
+-	#card_atr 3B:7F:18:00:00:00:31:B8:64:50:23:EC:C1:73:94:01:80:82:90:00 {
+-	#	type = 25003;
+-	#	driver = "iasecc";
+-	#	name = "Morpho YpsID S3 IAS/ECC";
+-	#	# secure_messaging = local_morpho_YpsID_S3;
+-	#}
+-	#card_atr 3B:DF:96:00:80:31:FE:45:00:31:B8:64:04:1F:EC:C1:73:94:01:80:82:90:00:EC {
+-	#	type = 25005;
+-	#	driver = "iasecc";
+-	#	name = "Morpho MI IAS/ECC v1.0.1";
+-	#	read_only = false;
+-	#	md_supports_X509_enrollment = true;
+-	#	secure_messaging = local_morpho_mi;
+-	#}
+-	card_atr 3B:DF:18:FF:81:91:FE:1F:C3:00:31:B8:64:0C:01:EC:C1:73:94:01:80:82:90:00:B3 {
+-		type = 25004;
+-		driver = "iasecc";
+-		name = "Amos IAS/ECC v1.0.1";
+-		read_only = false;
+-		md_supports_X509_enrollment = true;
+-		secure_messaging = local_amos;
+-	}
+-	card_atr 3B:DC:18:FF:81:91:FE:1F:C3:80:73:C8:21:13:66:01:0B:03:52:00:05:38 {
+-		type = 25004;
+-		driver = "iasecc";
+-		name = "Amos IAS/ECC v1.0.1";
+-		read_only = false;
+-		md_supports_X509_enrollment = true;
+-		secure_messaging = local_amos_eid;
+-	}
+-
+-	# SmartCard-HSM with contact-based interface or USB-Stick
+-	card_atr 3B:FE:18:00:00:81:31:FE:45:80:31:81:54:48:53:4D:31:73:80:21:40:81:07:FA {
+-		driver = "sc-hsm";
+-		read_only = false;
+-		md_supports_X509_enrollment = true;
+-		md_supports_container_key_gen = true;
+-		md_guid_as_label = true;
+-	}
+-
+-	# SmartCard-HSM with contact-less interface
+-	card_atr 3B:8E:80:01:80:31:81:54:48:53:4D:31:73:80:21:40:81:07:18 {
+-		driver = "sc-hsm";
+-		read_only = false;
+-		md_supports_X509_enrollment = true;
+-		md_supports_container_key_gen = true;
+-		md_guid_as_label = true;
+-	}
+-
+-	# SmartCard-HSM 4k with contact-based interface or USB-Stick
+-	card_atr 3b:de:18:ff:81:91:fe:1f:c3:80:31:81:54:48:53:4d:31:73:80:21:40:81:07:1c {
+-		driver = "sc-hsm";
+-		read_only = false;
+-		md_supports_X509_enrollment = true;
+-		md_supports_container_key_gen = true;
+-		md_guid_as_label = true;
+-	}
+-
+-	# SmartCard-HSM with fingerprint sensor and PIN pad
+-	card_atr 3B:80:80:01:01 {
+-		force_protocol = "t1";
+-		read_only = true;
+-		md_supports_X509_enrollment = true;
+-		md_supports_container_key_gen = true;
+-		md_guid_as_label = true;
+-		md_pinpad_dlg_main = "Fingerabdruck oder PIN eingeben";
+-		md_pinpad_dlg_content_user = "Bitte verifizieren Sie Ihren Fingarabdruck oder Ihre PIN auf der Karte.";
+-		md_pinpad_dlg_content_user_sign = "Bitte verifizieren Sie Ihren Fingarabdruck oder Ihre PIN für die digitale Signatur auf der Karte.";
+-		md_pinpad_dlg_content_admin = "Bitte geben Sie Ihre PIN zum Entsperren der Nutzer-PIN auf dem PIN-Pad ein.";
+-		md_pinpad_dlg_expanded = "Dieses Fenster wird automatisch geschlossen, wenn die PIN oder der Fingerabdruck verifiziert wurde (Timeout nach 30 Sekunden). Nutzen Sie das PIN-Pad, um die Eingabe abzubrechen.";
+-		md_pinpad_dlg_timeout = 30;
+-		notify_card_inserted = "GoID erkannt";
+-		notify_card_inserted_text = "";
+-		notify_card_removed = "GoID entfernt";
+-		notify_pin_good = "Fingerabdruck bzw. PIN verifiziert";
+-		notify_pin_good_text = "GoID ist entsperrt";
+-		notify_pin_bad = "Fingerabdruck bzw. PIN nicht verifiziert";
+-		notify_pin_bad_text = "GoID ist gesperrt";
+-	}
+-
+-	# GoID with fingerprint sensor and PIN pad
+-	card_atr 3B:84:80:01:47:6f:49:44:00 {
+-		atrmask = "FF:FF:FF:FF:FF:FF:FF:FF:00";
+-		driver = "sc-hsm";
+-		force_protocol = "t1";
+-		read_only = true;
+-		md_supports_X509_enrollment = true;
+-		md_supports_container_key_gen = true;
+-		md_guid_as_label = true;
+-		md_pinpad_dlg_main = "Fingerabdruck oder PIN eingeben";
+-		md_pinpad_dlg_content_user = "Bitte verifizieren Sie Ihren Fingarabdruck oder Ihre PIN auf der Karte.";
+-		md_pinpad_dlg_content_user_sign = "Bitte verifizieren Sie Ihren Fingarabdruck oder Ihre PIN für die digitale Signatur auf der Karte.";
+-		md_pinpad_dlg_content_admin = "Bitte geben Sie Ihre PIN zum Entsperren der Nutzer-PIN auf dem PIN-Pad ein.";
+-		md_pinpad_dlg_expanded = "Dieses Fenster wird automatisch geschlossen, wenn die PIN oder der Fingerabdruck verifiziert wurde (Timeout nach 30 Sekunden). Nutzen Sie das PIN-Pad, um die Eingabe abzubrechen.";
+-		md_pinpad_dlg_timeout = 30;
+-		notify_card_inserted = "GoID erkannt";
+-		notify_card_inserted_text = "";
+-		notify_card_removed = "GoID entfernt";
+-		notify_pin_good = "Fingerabdruck bzw. PIN verifiziert";
+-		notify_pin_good_text = "GoID ist entsperrt";
+-		notify_pin_bad = "Fingerabdruck bzw. PIN nicht verifiziert";
+-		notify_pin_bad_text = "GoID ist gesperrt";
+-	}
+-	# GoID with fingerprint sensor and PIN pad
+-	card_atr 3B:85:80:01:47:6f:49:44:00:00 {
+-		atrmask = "FF:FF:FF:FF:FF:FF:FF:FF:00:00";
+-		driver = "sc-hsm";
+-		force_protocol = "t1";
+-		read_only = true;
+-		md_supports_X509_enrollment = true;
+-		md_supports_container_key_gen = true;
+-		md_guid_as_label = true;
+-		md_pinpad_dlg_main = "Fingerabdruck oder PIN eingeben";
+-		md_pinpad_dlg_content_user = "Bitte verifizieren Sie Ihren Fingarabdruck oder Ihre PIN auf der Karte.";
+-		md_pinpad_dlg_content_user_sign = "Bitte verifizieren Sie Ihren Fingarabdruck oder Ihre PIN für die digitale Signatur auf der Karte.";
+-		md_pinpad_dlg_content_admin = "Bitte geben Sie Ihre PIN zum Entsperren der Nutzer-PIN auf dem PIN-Pad ein.";
+-		md_pinpad_dlg_expanded = "Dieses Fenster wird automatisch geschlossen, wenn die PIN oder der Fingerabdruck verifiziert wurde (Timeout nach 30 Sekunden). Nutzen Sie das PIN-Pad, um die Eingabe abzubrechen.";
+-		md_pinpad_dlg_timeout = 30;
+-		notify_card_inserted = "GoID erkannt";
+-		notify_card_inserted_text = "";
+-		notify_card_removed = "GoID entfernt";
+-		notify_pin_good = "Fingerabdruck bzw. PIN verifiziert";
+-		notify_pin_good_text = "GoID ist entsperrt";
+-		notify_pin_bad = "Fingerabdruck bzw. PIN nicht verifiziert";
+-		notify_pin_bad_text = "GoID ist gesperrt";
+-	}
+-	# GoID with fingerprint sensor and PIN pad
+-	card_atr 3B:86:80:01:47:6f:49:44:00:00:00 {
+-		atrmask = "FF:FF:FF:FF:FF:FF:FF:FF:00:00:00";
+-		driver = "sc-hsm";
+-		force_protocol = "t1";
+-		read_only = true;
+-		md_supports_X509_enrollment = true;
+-		md_supports_container_key_gen = true;
+-		md_guid_as_label = true;
+-		md_pinpad_dlg_main = "Fingerabdruck oder PIN eingeben";
+-		md_pinpad_dlg_content_user = "Bitte verifizieren Sie Ihren Fingarabdruck oder Ihre PIN auf der Karte.";
+-		md_pinpad_dlg_content_user_sign = "Bitte verifizieren Sie Ihren Fingarabdruck oder Ihre PIN für die digitale Signatur auf der Karte.";
+-		md_pinpad_dlg_content_admin = "Bitte geben Sie Ihre PIN zum Entsperren der Nutzer-PIN auf dem PIN-Pad ein.";
+-		md_pinpad_dlg_expanded = "Dieses Fenster wird automatisch geschlossen, wenn die PIN oder der Fingerabdruck verifiziert wurde (Timeout nach 30 Sekunden). Nutzen Sie das PIN-Pad, um die Eingabe abzubrechen.";
+-		md_pinpad_dlg_timeout = 30;
+-		notify_card_inserted = "GoID erkannt";
+-		notify_card_inserted_text = "";
+-		notify_card_removed = "GoID entfernt";
+-		notify_pin_good = "Fingerabdruck bzw. PIN verifiziert";
+-		notify_pin_good_text = "GoID ist entsperrt";
+-		notify_pin_bad = "Fingerabdruck bzw. PIN nicht verifiziert";
+-		notify_pin_bad_text = "GoID ist gesperrt";
+-	}
+-	# GoID with fingerprint sensor and PIN pad
+-	card_atr 3B:87:80:01:47:6f:49:44:00:00:00:00 {
+-		atrmask = "FF:FF:FF:FF:FF:FF:FF:FF:00:00:00:00";
+-		driver = "sc-hsm";
+-		force_protocol = "t1";
+-		read_only = true;
+-		md_supports_X509_enrollment = true;
+-		md_supports_container_key_gen = true;
+-		md_guid_as_label = true;
+-		md_pinpad_dlg_main = "Fingerabdruck oder PIN eingeben";
+-		md_pinpad_dlg_content_user = "Bitte verifizieren Sie Ihren Fingarabdruck oder Ihre PIN auf der Karte.";
+-		md_pinpad_dlg_content_user_sign = "Bitte verifizieren Sie Ihren Fingarabdruck oder Ihre PIN für die digitale Signatur auf der Karte.";
+-		md_pinpad_dlg_content_admin = "Bitte geben Sie Ihre PIN zum Entsperren der Nutzer-PIN auf dem PIN-Pad ein.";
+-		md_pinpad_dlg_expanded = "Dieses Fenster wird automatisch geschlossen, wenn die PIN oder der Fingerabdruck verifiziert wurde (Timeout nach 30 Sekunden). Nutzen Sie das PIN-Pad, um die Eingabe abzubrechen.";
+-		md_pinpad_dlg_timeout = 30;
+-		notify_card_inserted = "GoID erkannt";
+-		notify_card_inserted_text = "";
+-		notify_card_removed = "GoID entfernt";
+-		notify_pin_good = "Fingerabdruck bzw. PIN verifiziert";
+-		notify_pin_good_text = "GoID ist entsperrt";
+-		notify_pin_bad = "Fingerabdruck bzw. PIN nicht verifiziert";
+-		notify_pin_bad_text = "GoID ist gesperrt";
+-	}
+-	# GoID with fingerprint sensor and PIN pad
+-	card_atr 3B:88:80:01:47:6f:49:44:00:00:00:00:00 {
+-		atrmask = "FF:FF:FF:FF:FF:FF:FF:FF:00:00:00:00:00";
+-		driver = "sc-hsm";
+-		force_protocol = "t1";
+-		read_only = true;
+-		md_supports_X509_enrollment = true;
+-		md_supports_container_key_gen = true;
+-		md_guid_as_label = true;
+-		md_pinpad_dlg_main = "Fingerabdruck oder PIN eingeben";
+-		md_pinpad_dlg_content_user = "Bitte verifizieren Sie Ihren Fingarabdruck oder Ihre PIN auf der Karte.";
+-		md_pinpad_dlg_content_user_sign = "Bitte verifizieren Sie Ihren Fingarabdruck oder Ihre PIN für die digitale Signatur auf der Karte.";
+-		md_pinpad_dlg_content_admin = "Bitte geben Sie Ihre PIN zum Entsperren der Nutzer-PIN auf dem PIN-Pad ein.";
+-		md_pinpad_dlg_expanded = "Dieses Fenster wird automatisch geschlossen, wenn die PIN oder der Fingerabdruck verifiziert wurde (Timeout nach 30 Sekunden). Nutzen Sie das PIN-Pad, um die Eingabe abzubrechen.";
+-		md_pinpad_dlg_timeout = 30;
+-		notify_card_inserted = "GoID erkannt";
+-		notify_card_inserted_text = "";
+-		notify_card_removed = "GoID entfernt";
+-		notify_pin_good = "Fingerabdruck bzw. PIN verifiziert";
+-		notify_pin_good_text = "GoID ist entsperrt";
+-		notify_pin_bad = "Fingerabdruck bzw. PIN nicht verifiziert";
+-		notify_pin_bad_text = "GoID ist gesperrt";
+-	}
+-	# GoID with fingerprint sensor and PIN pad
+-	card_atr 3B:89:80:01:47:6f:49:44:00:00:00:00:00:00 {
+-		atrmask = "FF:FF:FF:FF:FF:FF:FF:FF:00:00:00:00:00:00";
+-		driver = "sc-hsm";
+-		force_protocol = "t1";
+-		read_only = true;
+-		md_supports_X509_enrollment = true;
+-		md_supports_container_key_gen = true;
+-		md_guid_as_label = true;
+-		md_pinpad_dlg_main = "Fingerabdruck oder PIN eingeben";
+-		md_pinpad_dlg_content_user = "Bitte verifizieren Sie Ihren Fingarabdruck oder Ihre PIN auf der Karte.";
+-		md_pinpad_dlg_content_user_sign = "Bitte verifizieren Sie Ihren Fingarabdruck oder Ihre PIN für die digitale Signatur auf der Karte.";
+-		md_pinpad_dlg_content_admin = "Bitte geben Sie Ihre PIN zum Entsperren der Nutzer-PIN auf dem PIN-Pad ein.";
+-		md_pinpad_dlg_expanded = "Dieses Fenster wird automatisch geschlossen, wenn die PIN oder der Fingerabdruck verifiziert wurde (Timeout nach 30 Sekunden). Nutzen Sie das PIN-Pad, um die Eingabe abzubrechen.";
+-		md_pinpad_dlg_timeout = 30;
+-		notify_card_inserted = "GoID erkannt";
+-		notify_card_inserted_text = "";
+-		notify_card_removed = "GoID entfernt";
+-		notify_pin_good = "Fingerabdruck bzw. PIN verifiziert";
+-		notify_pin_good_text = "GoID ist entsperrt";
+-		notify_pin_bad = "Fingerabdruck bzw. PIN nicht verifiziert";
+-		notify_pin_bad_text = "GoID ist gesperrt";
+-	}
+-	# GoID with fingerprint sensor and PIN pad
+-	card_atr 3B:8A:80:01:47:6f:49:44:00:00:00:00:00:00:00 {
+-		atrmask = "FF:FF:FF:FF:FF:FF:FF:FF:00:00:00:00:00:00:00";
+-		driver = "sc-hsm";
+-		force_protocol = "t1";
+-		read_only = true;
+-		md_supports_X509_enrollment = true;
+-		md_supports_container_key_gen = true;
+-		md_guid_as_label = true;
+-		md_pinpad_dlg_main = "Fingerabdruck oder PIN eingeben";
+-		md_pinpad_dlg_content_user = "Bitte verifizieren Sie Ihren Fingarabdruck oder Ihre PIN auf der Karte.";
+-		md_pinpad_dlg_content_user_sign = "Bitte verifizieren Sie Ihren Fingarabdruck oder Ihre PIN für die digitale Signatur auf der Karte.";
+-		md_pinpad_dlg_content_admin = "Bitte geben Sie Ihre PIN zum Entsperren der Nutzer-PIN auf dem PIN-Pad ein.";
+-		md_pinpad_dlg_expanded = "Dieses Fenster wird automatisch geschlossen, wenn die PIN oder der Fingerabdruck verifiziert wurde (Timeout nach 30 Sekunden). Nutzen Sie das PIN-Pad, um die Eingabe abzubrechen.";
+-		md_pinpad_dlg_timeout = 30;
+-		notify_card_inserted = "GoID erkannt";
+-		notify_card_inserted_text = "";
+-		notify_card_removed = "GoID entfernt";
+-		notify_pin_good = "Fingerabdruck bzw. PIN verifiziert";
+-		notify_pin_good_text = "GoID ist entsperrt";
+-		notify_pin_bad = "Fingerabdruck bzw. PIN nicht verifiziert";
+-		notify_pin_bad_text = "GoID ist gesperrt";
+-	}
+-	# GoID with fingerprint sensor and PIN pad
+-	card_atr 3B:8B:80:01:47:6f:49:44:00:00:00:00:00:00:00:00 {
+-		atrmask = "FF:FF:FF:FF:FF:FF:FF:FF:00:00:00:00:00:00:00:00";
+-		driver = "sc-hsm";
+-		force_protocol = "t1";
+-		read_only = true;
+-		md_supports_X509_enrollment = true;
+-		md_supports_container_key_gen = true;
+-		md_guid_as_label = true;
+-		md_pinpad_dlg_main = "Fingerabdruck oder PIN eingeben";
+-		md_pinpad_dlg_content_user = "Bitte verifizieren Sie Ihren Fingarabdruck oder Ihre PIN auf der Karte.";
+-		md_pinpad_dlg_content_user_sign = "Bitte verifizieren Sie Ihren Fingarabdruck oder Ihre PIN für die digitale Signatur auf der Karte.";
+-		md_pinpad_dlg_content_admin = "Bitte geben Sie Ihre PIN zum Entsperren der Nutzer-PIN auf dem PIN-Pad ein.";
+-		md_pinpad_dlg_expanded = "Dieses Fenster wird automatisch geschlossen, wenn die PIN oder der Fingerabdruck verifiziert wurde (Timeout nach 30 Sekunden). Nutzen Sie das PIN-Pad, um die Eingabe abzubrechen.";
+-		md_pinpad_dlg_timeout = 30;
+-		notify_card_inserted = "GoID erkannt";
+-		notify_card_inserted_text = "";
+-		notify_card_removed = "GoID entfernt";
+-		notify_pin_good = "Fingerabdruck bzw. PIN verifiziert";
+-		notify_pin_good_text = "GoID ist entsperrt";
+-		notify_pin_bad = "Fingerabdruck bzw. PIN nicht verifiziert";
+-		notify_pin_bad_text = "GoID ist gesperrt";
+-	}
+-	# GoID with fingerprint sensor and PIN pad
+-	card_atr 3B:8C:80:01:47:6f:49:44:00:00:00:00:00:00:00:00:00 {
+-		atrmask = "FF:FF:FF:FF:FF:FF:FF:FF:00:00:00:00:00:00:00:00:00";
+-		driver = "sc-hsm";
+-		force_protocol = "t1";
+-		read_only = true;
+-		md_supports_X509_enrollment = true;
+-		md_supports_container_key_gen = true;
+-		md_guid_as_label = true;
+-		md_pinpad_dlg_main = "Fingerabdruck oder PIN eingeben";
+-		md_pinpad_dlg_content_user = "Bitte verifizieren Sie Ihren Fingarabdruck oder Ihre PIN auf der Karte.";
+-		md_pinpad_dlg_content_user_sign = "Bitte verifizieren Sie Ihren Fingarabdruck oder Ihre PIN für die digitale Signatur auf der Karte.";
+-		md_pinpad_dlg_content_admin = "Bitte geben Sie Ihre PIN zum Entsperren der Nutzer-PIN auf dem PIN-Pad ein.";
+-		md_pinpad_dlg_expanded = "Dieses Fenster wird automatisch geschlossen, wenn die PIN oder der Fingerabdruck verifiziert wurde (Timeout nach 30 Sekunden). Nutzen Sie das PIN-Pad, um die Eingabe abzubrechen.";
+-		md_pinpad_dlg_timeout = 30;
+-		notify_card_inserted = "GoID erkannt";
+-		notify_card_inserted_text = "";
+-		notify_card_removed = "GoID entfernt";
+-		notify_pin_good = "Fingerabdruck bzw. PIN verifiziert";
+-		notify_pin_good_text = "GoID ist entsperrt";
+-		notify_pin_bad = "Fingerabdruck bzw. PIN nicht verifiziert";
+-		notify_pin_bad_text = "GoID ist gesperrt";
+-	}
+-
+-	# GoID with fingerprint sensor and PIN pad
+-	card_atr 3B:8D:80:01:47:6f:49:44:00:00:00:00:00:00:00:00:00:00 {
+-		atrmask = "FF:FF:FF:FF:FF:FF:FF:FF:00:00:00:00:00:00:00:00:00:00";
+-		driver = "sc-hsm";
+-		force_protocol = "t1";
+-		read_only = true;
+-		md_supports_X509_enrollment = true;
+-		md_supports_container_key_gen = true;
+-		md_guid_as_label = true;
+-		md_pinpad_dlg_main = "Fingerabdruck oder PIN eingeben";
+-		md_pinpad_dlg_content_user = "Bitte verifizieren Sie Ihren Fingarabdruck oder Ihre PIN auf der Karte.";
+-		md_pinpad_dlg_content_user_sign = "Bitte verifizieren Sie Ihren Fingarabdruck oder Ihre PIN für die digitale Signatur auf der Karte.";
+-		md_pinpad_dlg_content_admin = "Bitte geben Sie Ihre PIN zum Entsperren der Nutzer-PIN auf dem PIN-Pad ein.";
+-		md_pinpad_dlg_expanded = "Dieses Fenster wird automatisch geschlossen, wenn die PIN oder der Fingerabdruck verifiziert wurde (Timeout nach 30 Sekunden). Nutzen Sie das PIN-Pad, um die Eingabe abzubrechen.";
+-		md_pinpad_dlg_timeout = 30;
+-		notify_card_inserted = "GoID erkannt";
+-		notify_card_inserted_text = "";
+-		notify_card_removed = "GoID entfernt";
+-		notify_pin_good = "Fingerabdruck bzw. PIN verifiziert";
+-		notify_pin_good_text = "GoID ist entsperrt";
+-		notify_pin_bad = "Fingerabdruck bzw. PIN nicht verifiziert";
+-		notify_pin_bad_text = "GoID ist gesperrt";
+-	}
+-
+-	# GoID with fingerprint sensor and PIN pad
+-	card_atr 3B:8E:80:01:47:6f:49:44:00:00:00:00:00:00:00:00:00:00:00 {
+-		atrmask = "FF:FF:FF:FF:FF:FF:FF:FF:00:00:00:00:00:00:00:00:00:00:00";
+-		driver = "sc-hsm";
+-		force_protocol = "t1";
+-		read_only = true;
+-		md_supports_X509_enrollment = true;
+-		md_supports_container_key_gen = true;
+-		md_guid_as_label = true;
+-		md_pinpad_dlg_main = "Fingerabdruck oder PIN eingeben";
+-		md_pinpad_dlg_content_user = "Bitte verifizieren Sie Ihren Fingarabdruck oder Ihre PIN auf der Karte.";
+-		md_pinpad_dlg_content_user_sign = "Bitte verifizieren Sie Ihren Fingarabdruck oder Ihre PIN für die digitale Signatur auf der Karte.";
+-		md_pinpad_dlg_content_admin = "Bitte geben Sie Ihre PIN zum Entsperren der Nutzer-PIN auf dem PIN-Pad ein.";
+-		md_pinpad_dlg_expanded = "Dieses Fenster wird automatisch geschlossen, wenn die PIN oder der Fingerabdruck verifiziert wurde (Timeout nach 30 Sekunden). Nutzen Sie das PIN-Pad, um die Eingabe abzubrechen.";
+-		md_pinpad_dlg_timeout = 30;
+-		notify_card_inserted = "GoID erkannt";
+-		notify_card_inserted_text = "";
+-		notify_card_removed = "GoID entfernt";
+-		notify_pin_good = "Fingerabdruck bzw. PIN verifiziert";
+-		notify_pin_good_text = "GoID ist entsperrt";
+-		notify_pin_bad = "Fingerabdruck bzw. PIN nicht verifiziert";
+-		notify_pin_bad_text = "GoID ist gesperrt";
+-	}
+-
+-	# GoID with fingerprint sensor and PIN pad
+-	card_atr 3B:8F:80:01:47:6f:49:44:00:00:00:00:00:00:00:00:00:00:00:00 {
+-		atrmask = "FF:FF:FF:FF:FF:FF:FF:FF:00:00:00:00:00:00:00:00:00:00:00:00";
+-		driver = "sc-hsm";
+-		force_protocol = "t1";
+-		read_only = true;
+-		md_supports_X509_enrollment = true;
+-		md_supports_container_key_gen = true;
+-		md_guid_as_label = true;
+-		md_pinpad_dlg_main = "Fingerabdruck oder PIN eingeben";
+-		md_pinpad_dlg_content_user = "Bitte verifizieren Sie Ihren Fingarabdruck oder Ihre PIN auf der Karte.";
+-		md_pinpad_dlg_content_user_sign = "Bitte verifizieren Sie Ihren Fingarabdruck oder Ihre PIN für die digitale Signatur auf der Karte.";
+-		md_pinpad_dlg_content_admin = "Bitte geben Sie Ihre PIN zum Entsperren der Nutzer-PIN auf dem PIN-Pad ein.";
+-		md_pinpad_dlg_expanded = "Dieses Fenster wird automatisch geschlossen, wenn die PIN oder der Fingerabdruck verifiziert wurde (Timeout nach 30 Sekunden). Nutzen Sie das PIN-Pad, um die Eingabe abzubrechen.";
+-		md_pinpad_dlg_timeout = 30;
+-		notify_card_inserted = "GoID erkannt";
+-		notify_card_inserted_text = "";
+-		notify_card_removed = "GoID entfernt";
+-		notify_pin_good = "Fingerabdruck bzw. PIN verifiziert";
+-		notify_pin_good_text = "GoID ist entsperrt";
+-		notify_pin_bad = "Fingerabdruck bzw. PIN nicht verifiziert";
+-		notify_pin_bad_text = "GoID ist gesperrt";
+-	}
+-
+-	secure_messaging local_authentic  {
+-		# name of external SM module
+-		# module_name = @DEFAULT_SM_MODULE@;
+-		# directory with external SM module
+-		# Default: @DEFAULT_SM_MODULE_PATH@
+-		# module_path = @DEFAULT_SM_MODULE_PATH@;
+-
+-		# specific data to tune the module initialization
+-		# module_data = "Here can be your SM module init data";
+-
+-		# SM mode:
+-		# 'transmit' -- in this mode the procedure to securize an APDU is called by the OpenSC general
+-		#	       APDU transmit procedure.
+-		#		In this mode all APDUs, except the ones filtered by the card specific procedure,
+-		#	       are securized.
+-		# 'acl' -- in this mode APDU are securized only if needed by the ACLs of the command to be executed.
+-		#
+-		#mode = transmit;
+-
+-		# SM type specific flags
+-		# flags = 0x78;	   # 0x78 -- level 3, channel 0
+-
+-		# Default KMC of the GP Card Manager for the Oberthur's Java cards
+-		# kmc = "00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00";
+-	}
+-
+-	secure_messaging local_gemalto_iam  {
+-		module_name = @DEFAULT_SM_MODULE@;
+-		# module_path = @DEFAULT_SM_MODULE_PATH@;
+-		# module_data = "";
+-		type = acl;	     # transmit, acl
+-
+-		ifd_serial = "11:22:33:44:55:66:77:88";
+-
+-		# Keyset values from IAM profiles of the Gemalto IAS/ECC cards
+-		keyset_02_enc = "RW_PRIV_ENC_TEST";
+-		keyset_02_mac = "RW_PRIV_MAC_TEST";
+-
+-		keyset_E828BD080FD2504543432D654944_01_enc = "RO_ENC_TEST_KEY_";
+-		keyset_E828BD080FD2504543432D654944_01_mac = "RO_MAC_TEST_KEY_";
+-
+-		keyset_E828BD080FD2504543432D654944_03_enc = "RW_PUBL_ENC_TEST";
+-		keyset_E828BD080FD2504543432D654944_03_mac = "RW_PUBL_MAC_TEST";
+-	}
+-
+-	secure_messaging local_amos  {
+-		module_name = @DEFAULT_SM_MODULE@;
+-		# module_path = @DEFAULT_SM_MODULE_PATH@;
+-		# module_data = "";
+-		mode = acl;
+-		ifd_serial = "11:22:33:44:55:66:77:88";
+-		keyset_02_enc = "ENCROECHANTILLON";
+-		keyset_02_mac = "MACROECHANTILLON";
+-	}
+-
+-	secure_messaging local_amos_eid  {
+-		module_name = @DEFAULT_SM_MODULE@;
+-		# module_path = @DEFAULT_SM_MODULE_PATH@;
+-		# module_data = "";
+-		mode = acl;
+-		ifd_serial = "11:22:33:44:55:66:77:88";
+-		keyset_E828BD080FD2504543432D654944_03_enc = "RW_PUBL_ENC_TEST";
+-		keyset_E828BD080FD2504543432D654944_03_mac = "RW_PUBL_MAC_TEST";
+-	}
+-
+-	secure_messaging local_adele  {
+-		module_name = @DEFAULT_SM_MODULE@;
+-		# module_path = @DEFAULT_SM_MODULE_PATH@;
+-		# module_data = "";
+-		type = acl;	     # transmit, acl
+-
+-		ifd_serial = "11:22:33:44:55:66:77:88";
+-
+-		# Keyset values from 'Adele' profiles of the IAS/ECC cards
+-		keyset_01_enc = "EMENCECHANTILLON";
+-		keyset_01_mac = "EMMACECHANTILLON";
+-
+-		keyset_02_enc = "AAENCECHANTILLON";
+-		keyset_02_mac = "AAMACECHANTILLON";
+-
+-		keyset_E828BD080FD2500000040301_02_enc = "E2ENCECHANTILLON";
+-		keyset_E828BD080FD2500000040301_02_mac = "E2MACECHANTILLON";
+-
+-		keyset_D2500000044164E86C650101_02_enc = "E1ENCECHANTILLON";
+-		keyset_D2500000044164E86C650101_02_mac = "E1MACECHANTILLON";
+-
+-		keyset_D2500000044164E86C650101_03_enc = "SIENCECHANTILLON";
+-		keyset_D2500000044164E86C650101_03_mac = "SIMACECHANTILLON";
+-	}
+-
+ 	# Below are the framework specific configuration blocks.
+ 
+ 	# PKCS #15
+@@ -968,17 +193,6 @@
+ 		# Default: internal;
+ 		# builtin_emulators = old, internal;
+ 
+-		# additional settings per driver
+-		#
+-		# For pkcs15 emulators loaded from an external shared
+-		# library/DLL, you need to specify the path name of the module
+-		# and customize the card_atr example above correctly.
+-		#
+-		# emulate custom {
+-			# The location of the driver library
+-			# module = @LIBDIR@@LIB_PRE@p15emu_custom@DYN_LIB_EXT@;
+-		# }
+-
+ 		# Enable initialization and card recognition in PKCS#11 layer.
+ 		# Default: no
+ 		# pkcs11_enable_InitToken = yes;
+@@ -994,27 +208,6 @@
+ 		#            default 'false'
+ 		# - user_pin and sign_pin: labels of PIN objects that will be used as
+ 		#            user & sign PINs. Otherwise the first suitable one will be used.
+-		application E828BD080FD25047656E65726963 {
+-			type = generic;
+-			model = "ECC Generic PKI";
+-			# disable = true
+-		}
+-
+-		application E828BD080FD2500000040301 {
+-			type = generic;
+-			model = "Adèle Générique";
+-		}
+-
+-		application E828BD080FD2504543432D654944 {
+-			type = protected;
+-			model = "ECC eID";
+-		}
+-
+-		application E828BD080FD2500000040201 {
+-			type = protected;
+-			model = "Adèle Admin-2";
+-		}
+-
+ 		# Slovenian eID - low level (pinless, "Prijava brez PIN-a")
+ 		application E828BD080F014E585031 {
+ 			model = "ChipDocLite";
+@@ -1039,7 +232,7 @@
+ 		# If there are more slots than defined here,
+ 		# the remaining slots will be hidden from PKCS#11.
+ 		# Default: 16
+-		# max_virtual_slots = 32;
++		max_virtual_slots = 32;
+ 
+ 		# Maximum number of slots per smart card.
+ 		# If the card has fewer keys than defined here,
+@@ -1122,7 +315,7 @@
+ 		#       #   modes 00 and 01 of ISO command 'RESET RETRY COUNTER'. --vt
+ 		#
+ 		# Default: none
+-		# user_pin_unblock_style = set_pin_in_unlogged_session;
++		user_pin_unblock_style = set_pin_in_unlogged_session;
+ 
+ 		# Create slot for unblocking PIN with PUK
+ 		# This way PKCS#11 API can be used to login with PUK and
+@@ -1156,34 +349,3 @@
+ 		# create_slots_for_pins = "user"
+ 	}
+ }
+-
+-app "C:\Program Files\BraveSoftware\Brave-Browser\Application\brave.exe" {
+-	pkcs11 {
+-		slots_per_card = 1;
+-	}
+-}
+-
+-# Used by OpenSC.tokend on Mac OS X only
+-app tokend {
+-	# The file to which debug log will be written
+-	# Default: /tmp/opensc-tokend.log
+-	#
+-	# debug_file = /Library/Logs/OpenSC.tokend.log
+-
+-	framework tokend {
+-		# Score for OpenSC.tokend
+-		# The tokend with the highest score shall be used.
+-		# Default: 300
+-		#
+-		# score = 10;
+-
+-		# Tokend ignore to read PIN protected certificate that is set SC_PKCS15_CO_FLAG_PRIVATE flag.
+-		# Default: true
+-		#
+-		# ignore_private_certificate = false;
+-	}
+-}
+-
+-# Used by OpenSC minidriver on Windows only
+-app cardmod {
+-}
+--- a/src/libopensc/ctx.c
++++ b/src/libopensc/ctx.c
+@@ -105,59 +105,59 @@
+ 	/* The card handled by skeid shares the ATR with other cards running CardOS 5.4.
+ 	 * In order to prevent the cardos driver from matching skeid cards, skeid driver
+ 	 * precedes cardos and matches no other CardOS 5.4 card. */
+-	{ "skeid",	(void *(*)(void)) sc_get_skeid_driver },
+-	{ "cardos",	(void *(*)(void)) sc_get_cardos_driver },
+-	{ "cyberflex",	(void *(*)(void)) sc_get_cyberflex_driver },
+-	{ "gemsafeV1",	(void *(*)(void)) sc_get_gemsafeV1_driver },
+-	{ "starcos",	(void *(*)(void)) sc_get_starcos_driver },
+-	{ "tcos",	(void *(*)(void)) sc_get_tcos_driver },
++//	{ "skeid",	(void *(*)(void)) sc_get_skeid_driver },
++//	{ "cardos",	(void *(*)(void)) sc_get_cardos_driver },
++//	{ "cyberflex",	(void *(*)(void)) sc_get_cyberflex_driver },
++//	{ "gemsafeV1",	(void *(*)(void)) sc_get_gemsafeV1_driver },
++//	{ "starcos",	(void *(*)(void)) sc_get_starcos_driver },
++//	{ "tcos",	(void *(*)(void)) sc_get_tcos_driver },
+ #ifdef ENABLE_OPENSSL
+-	{ "oberthur",	(void *(*)(void)) sc_get_oberthur_driver },
+-	{ "authentic",	(void *(*)(void)) sc_get_authentic_driver },
+-	{ "iasecc",	(void *(*)(void)) sc_get_iasecc_driver },
++//	{ "oberthur",	(void *(*)(void)) sc_get_oberthur_driver },
++//	{ "authentic",	(void *(*)(void)) sc_get_authentic_driver },
++//	{ "iasecc",	(void *(*)(void)) sc_get_iasecc_driver },
+ #endif
+-	{ "belpic",	(void *(*)(void)) sc_get_belpic_driver },
++//	{ "belpic",	(void *(*)(void)) sc_get_belpic_driver },
+ #ifdef ENABLE_OPENSSL
+-	{ "entersafe",(void *(*)(void)) sc_get_entersafe_driver },
++//	{ "entersafe",(void *(*)(void)) sc_get_entersafe_driver },
+ #ifdef ENABLE_SM
+-	{ "epass2003",(void *(*)(void)) sc_get_epass2003_driver },
++//	{ "epass2003",(void *(*)(void)) sc_get_epass2003_driver },
+ #endif
+ #endif
+-	{ "rutoken",	(void *(*)(void)) sc_get_rutoken_driver },
+-	{ "rutoken_ecp",(void *(*)(void)) sc_get_rtecp_driver },
+-	{ "myeid",      (void *(*)(void)) sc_get_myeid_driver },
++//	{ "rutoken",	(void *(*)(void)) sc_get_rutoken_driver },
++//	{ "rutoken_ecp",(void *(*)(void)) sc_get_rtecp_driver },
++//	{ "myeid",      (void *(*)(void)) sc_get_myeid_driver },
+ #if defined(ENABLE_OPENSSL) && defined(ENABLE_SM)
+-	{ "dnie",       (void *(*)(void)) sc_get_dnie_driver },
++//	{ "dnie",       (void *(*)(void)) sc_get_dnie_driver },
+ #endif
+-	{ "masktech",	(void *(*)(void)) sc_get_masktech_driver },
+-	{ "esteid2018",	(void *(*)(void)) sc_get_esteid2018_driver },
+-	{ "idprime",	(void *(*)(void)) sc_get_idprime_driver },
++//	{ "masktech",	(void *(*)(void)) sc_get_masktech_driver },
++//	{ "esteid2018",	(void *(*)(void)) sc_get_esteid2018_driver },
++//	{ "idprime",	(void *(*)(void)) sc_get_idprime_driver },
+ #if defined(ENABLE_SM) && defined(ENABLE_OPENPACE)
+-	{ "edo",        (void *(*)(void)) sc_get_edo_driver },
++//	{ "edo",        (void *(*)(void)) sc_get_edo_driver },
+ #endif
+ 
+ /* Here should be placed drivers that need some APDU transactions in the
+  * driver's `match_card()` function. */
+-	{ "coolkey",	(void *(*)(void)) sc_get_coolkey_driver },
++//	{ "coolkey",	(void *(*)(void)) sc_get_coolkey_driver },
+ 	/* MUSCLE card applet returns 9000 on whatever AID is selected, see
+ 	 * https://github.com/JavaCardOS/MuscleCard-Applet/blob/master/musclecard/src/com/musclecard/CardEdge/CardEdge.java#L326
+ 	 * put the muscle driver first to cope with this bug. */
+-	{ "muscle",	(void *(*)(void)) sc_get_muscle_driver },
+-	{ "sc-hsm",	(void *(*)(void)) sc_get_sc_hsm_driver },
+-	{ "mcrd",	(void *(*)(void)) sc_get_mcrd_driver },
+-	{ "setcos",	(void *(*)(void)) sc_get_setcos_driver },
+-	{ "PIV-II",	(void *(*)(void)) sc_get_piv_driver },
+-	{ "cac",	(void *(*)(void)) sc_get_cac_driver },
+-	{ "itacns",	(void *(*)(void)) sc_get_itacns_driver },
+-	{ "isoApplet",	(void *(*)(void)) sc_get_isoApplet_driver },
++//	{ "muscle",	(void *(*)(void)) sc_get_muscle_driver },
++//	{ "sc-hsm",	(void *(*)(void)) sc_get_sc_hsm_driver },
++//	{ "mcrd",	(void *(*)(void)) sc_get_mcrd_driver },
++//	{ "setcos",	(void *(*)(void)) sc_get_setcos_driver },
++//	{ "PIV-II",	(void *(*)(void)) sc_get_piv_driver },
++//	{ "cac",	(void *(*)(void)) sc_get_cac_driver },
++//	{ "itacns",	(void *(*)(void)) sc_get_itacns_driver },
++//	{ "isoApplet",	(void *(*)(void)) sc_get_isoApplet_driver },
+ #ifdef ENABLE_ZLIB
+-	{ "gids",	(void *(*)(void)) sc_get_gids_driver },
++//	{ "gids",	(void *(*)(void)) sc_get_gids_driver },
+ #endif
+-	{ "openpgp",	(void *(*)(void)) sc_get_openpgp_driver },
+-	{ "jpki",	(void *(*)(void)) sc_get_jpki_driver },
+-	{ "npa",	(void *(*)(void)) sc_get_npa_driver },
+-	{ "cac1",	(void *(*)(void)) sc_get_cac1_driver },
+-	{ "nqapplet",	(void *(*)(void)) sc_get_nqApplet_driver },
++//	{ "openpgp",	(void *(*)(void)) sc_get_openpgp_driver },
++//	{ "jpki",	(void *(*)(void)) sc_get_jpki_driver },
++//	{ "npa",	(void *(*)(void)) sc_get_npa_driver },
++//	{ "cac1",	(void *(*)(void)) sc_get_cac1_driver },
++//	{ "nqapplet",	(void *(*)(void)) sc_get_nqApplet_driver },
+ #if defined(ENABLE_SM) && defined(ENABLE_OPENPACE)
+ 	{ "eOI",	(void *(*)(void)) sc_get_eoi_driver },
+ #endif
+@@ -168,15 +168,15 @@
+ };
+ 
+ static const struct _sc_driver_entry old_card_drivers[] = {
+-	{ "akis",       (void *(*)(void)) sc_get_akis_driver },
+-	{ "asepcos",    (void *(*)(void)) sc_get_asepcos_driver },
+-	{ "atrust-acos",(void *(*)(void)) sc_get_atrust_acos_driver },
+-	{ "flex",       (void *(*)(void)) sc_get_cryptoflex_driver },
++//	{ "akis",       (void *(*)(void)) sc_get_akis_driver },
++//	{ "asepcos",    (void *(*)(void)) sc_get_asepcos_driver },
++//	{ "atrust-acos",(void *(*)(void)) sc_get_atrust_acos_driver },
++//	{ "flex",       (void *(*)(void)) sc_get_cryptoflex_driver },
+ #ifdef ENABLE_OPENSSL
+-    { "gpk",        (void *(*)(void)) sc_get_gpk_driver },
++//	{ "gpk",        (void *(*)(void)) sc_get_gpk_driver },
+ #endif
+-	{ "incrypto34", (void *(*)(void)) sc_get_incrypto34_driver },
+-	{ "westcos",    (void *(*)(void)) sc_get_westcos_driver },
++//	{ "incrypto34", (void *(*)(void)) sc_get_incrypto34_driver },
++//	{ "westcos",    (void *(*)(void)) sc_get_westcos_driver },
+ 	{ NULL, NULL }
+ };
+ 
+--- a/src/libopensc/pkcs15-syn.c
++++ b/src/libopensc/pkcs15-syn.c
+@@ -36,40 +36,40 @@
+ #include "pkcs15-emulator-filter.h"
+ 
+ struct sc_pkcs15_emulator_handler builtin_emulators[] = {
+-	{ "openpgp",	sc_pkcs15emu_openpgp_init_ex	},
+-	{ "starcert",	sc_pkcs15emu_starcert_init_ex	},
+-	{ "tcos",	sc_pkcs15emu_tcos_init_ex	},
+-	{ "esteid",	sc_pkcs15emu_esteid_init_ex	},
+-	{ "itacns",	sc_pkcs15emu_itacns_init_ex	},
+-	{ "PIV-II",     sc_pkcs15emu_piv_init_ex	},
+-	{ "cac",        sc_pkcs15emu_cac_init_ex	},
+-	{ "idprime",    sc_pkcs15emu_idprime_init_ex	},
+-	{ "gemsafeV1",	sc_pkcs15emu_gemsafeV1_init_ex	},
+-	{ "entersafe",  sc_pkcs15emu_entersafe_init_ex	},
+-	{ "pteid",	sc_pkcs15emu_pteid_init_ex	},
+-	{ "oberthur",   sc_pkcs15emu_oberthur_init_ex	},
+-	{ "sc-hsm",	sc_pkcs15emu_sc_hsm_init_ex	},
+-	{ "dnie",       sc_pkcs15emu_dnie_init_ex	},
+-	{ "gids",       sc_pkcs15emu_gids_init_ex	},
+-	{ "iasecc",	sc_pkcs15emu_iasecc_init_ex	},
+-	{ "jpki",	sc_pkcs15emu_jpki_init_ex	},
+-	{ "coolkey",    sc_pkcs15emu_coolkey_init_ex	},
+-	{ "din66291",   sc_pkcs15emu_din_66291_init_ex	},
+-	{ "esteid2018", sc_pkcs15emu_esteid2018_init_ex	},
+-	{ "skeid",      sc_pkcs15emu_skeid_init_ex      },
+-	{ "cardos",     sc_pkcs15emu_cardos_init_ex	},
+-	{ "nqapplet",   sc_pkcs15emu_nqapplet_init_ex },
+-	{ "esign",      sc_pkcs15emu_starcos_esign_init_ex },
++//	{ "openpgp",	sc_pkcs15emu_openpgp_init_ex	},
++//	{ "starcert",	sc_pkcs15emu_starcert_init_ex	},
++//	{ "tcos",	sc_pkcs15emu_tcos_init_ex	},
++//	{ "esteid",	sc_pkcs15emu_esteid_init_ex	},
++//	{ "itacns",	sc_pkcs15emu_itacns_init_ex	},
++//	{ "PIV-II",     sc_pkcs15emu_piv_init_ex	},
++//	{ "cac",        sc_pkcs15emu_cac_init_ex	},
++//	{ "idprime",    sc_pkcs15emu_idprime_init_ex	},
++//	{ "gemsafeV1",	sc_pkcs15emu_gemsafeV1_init_ex	},
++//	{ "entersafe",  sc_pkcs15emu_entersafe_init_ex	},
++//	{ "pteid",	sc_pkcs15emu_pteid_init_ex	},
++//	{ "oberthur",   sc_pkcs15emu_oberthur_init_ex	},
++//	{ "sc-hsm",	sc_pkcs15emu_sc_hsm_init_ex	},
++//	{ "dnie",       sc_pkcs15emu_dnie_init_ex	},
++//	{ "gids",       sc_pkcs15emu_gids_init_ex	},
++//	{ "iasecc",	sc_pkcs15emu_iasecc_init_ex	},
++//	{ "jpki",	sc_pkcs15emu_jpki_init_ex	},
++//	{ "coolkey",    sc_pkcs15emu_coolkey_init_ex	},
++//	{ "din66291",   sc_pkcs15emu_din_66291_init_ex	},
++//	{ "esteid2018", sc_pkcs15emu_esteid2018_init_ex	},
++//	{ "skeid",      sc_pkcs15emu_skeid_init_ex      },
++//	{ "cardos",     sc_pkcs15emu_cardos_init_ex	},
++//	{ "nqapplet",   sc_pkcs15emu_nqapplet_init_ex },
++//	{ "esign",      sc_pkcs15emu_starcos_esign_init_ex },
+ 	{ "eOI",        sc_pkcs15emu_eoi_init_ex },
+ 	{ NULL, NULL }
+ };
+ 
+ struct sc_pkcs15_emulator_handler old_emulators[] = {
+-	{ "westcos",	sc_pkcs15emu_westcos_init_ex	},
+-	{ "gemsafeGPK",	sc_pkcs15emu_gemsafeGPK_init_ex	},
+-	{ "atrust-acos",sc_pkcs15emu_atrust_acos_init_ex},
+-	{ "actalis",	sc_pkcs15emu_actalis_init_ex	},
+-	{ "tccardos",	sc_pkcs15emu_tccardos_init_ex	},
++//	{ "westcos",	sc_pkcs15emu_westcos_init_ex	},
++//	{ "gemsafeGPK",	sc_pkcs15emu_gemsafeGPK_init_ex	},
++//	{ "atrust-acos",sc_pkcs15emu_atrust_acos_init_ex},
++//	{ "actalis",	sc_pkcs15emu_actalis_init_ex	},
++//	{ "tccardos",	sc_pkcs15emu_tccardos_init_ex	},
+ 	{ NULL, NULL }
+ };	
+ 

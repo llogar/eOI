@@ -1,0 +1,14 @@
+--- a/src/pkcs11/framework-pkcs15.c
++++ b/src/pkcs11/framework-pkcs15.c
+@@ -1214,7 +1214,10 @@
+ 					slot->token_info.label[i] = '.';
+ 				}
+ 			}
+-			slot->token_info.flags |= CKF_LOGIN_REQUIRED;
++			if ((p15card->tokeninfo->flags & SC_PKCS15_TOKEN_LOGIN_REQUIRED) ||
++			    ((p15card->card->type != SC_CARD_TYPE_EOI) && (p15card->card->type != SC_CARD_TYPE_EOI_CONTACTLESS)))
++				slot->token_info.flags |= CKF_LOGIN_REQUIRED;
++
+ 		}
+ 	}
+ 

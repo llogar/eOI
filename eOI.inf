@@ -1,0 +1,43 @@
+;
+;eOI Driver Smartcard installation x86 and x64 package.
+;
+
+[Version]
+Signature="$Windows NT$"
+Class=SmartCard
+ClassGuid={990A2BD7-E738-46c7-B26F-1CF8FB9F1391}
+Provider=%ProviderName%
+CatalogFile=eOI.cat
+DriverVer=09/26/2023,0.0.0.0
+
+[Manufacturer]
+%ProviderName%=Minidriver,NTamd64.6.1,NTx86.6.1
+
+[Minidriver.NTamd64.6.1]
+%CardDeviceName%=Minidriver64_61_Install,scfilter\CID_8073C82110
+
+[Minidriver.NTx86.6.1]
+%CardDeviceName%=Minidriver32_61_Install,scfilter\CID_8073C82110
+
+[DefaultInstall]
+
+[DefaultInstall.ntamd64.6.1]
+
+[DefaultInstall.NTx86.6.1]
+
+[Minidriver64_61_Install.NT]
+
+[Minidriver32_61_Install.NT]
+
+[Minidriver64_61_Install.NT.Services]
+AddService = ,2
+
+[Minidriver32_61_Install.NT.Services]
+AddService = ,2
+
+
+; =================== Generic ==================================
+
+[Strings]
+ProviderName ="eOI"
+CardDeviceName="eOI Smart card"

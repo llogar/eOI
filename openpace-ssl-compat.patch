@@ -1,0 +1,22 @@
+--- a/src/ssl_compat.c
++++ b/src/ssl_compat.c
+@@ -11,6 +11,19 @@
+ #include <openssl/rsa.h>
+ #include <string.h>
+ 
++#define HAVE_DH_SET0_KEY
++#define HAVE_DH_GET0_KEY
++#define HAVE_DH_GET0_PQG
++#define HAVE_DH_SET0_PQG
++#define HAVE_RSA_SET0_KEY
++#define HAVE_RSA_GET0_KEY
++#define HAVE_ECDSA_SIG_GET0
++#define HAVE_ECDSA_SIG_SET0
++#define HAVE_ASN1_STRING_GET0_DATA
++#define HAVE_EC_POINT_GET_AFFINE_COORDINATES
++#define HAVE_EC_POINT_SET_AFFINE_COORDINATES
++#define HAVE_EVP_PKEY_DUP
++
+ #ifndef HAVE_DH_SET0_KEY
+ int DH_set0_key(DH *dh, BIGNUM *pub_key, BIGNUM *priv_key)
+ {
