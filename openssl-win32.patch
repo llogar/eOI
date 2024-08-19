@@ -1,16 +1,24 @@
---- a/crypto/conf/conf_mod.c
-+++ b/crypto/conf/conf_mod.c
-@@ -633,7 +633,7 @@
+Index: openssl/crypto/conf/conf_mod.c
+===================================================================
+--- openssl.orig/crypto/conf/conf_mod.c
++++ openssl/crypto/conf/conf_mod.c
+@@ -683,8 +683,12 @@ char *CONF_get1_default_config_file(void
  
      t = X509_get_default_cert_area();
  #ifndef OPENSSL_SYS_VMS
--    sep = "/";
++#if defined(OPENSSL_SYS_WINDOWS) || defined(OPENSSL_SYS_WIN32) || defined(OPENSSL_SYS_MINGW64) || defined(OPENSSL_SYS_MINGW32)
 +    sep = "\\";
++#else
+     sep = "/";
  #endif
++#endif
      size = strlen(t) + strlen(sep) + strlen(OPENSSL_CONF) + 1;
      file = OPENSSL_malloc(size);
---- a/crypto/cversion.c
-+++ b/crypto/cversion.c
+ 
+Index: openssl/crypto/cversion.c
+===================================================================
+--- openssl.orig/crypto/cversion.c
++++ openssl/crypto/cversion.c
 @@ -7,6 +7,12 @@
   * https://www.openssl.org/source/license.html
   */
@@ -24,7 +32,7 @@
  #include "internal/cryptlib.h"
  
  #include "buildinf.h"
-@@ -62,7 +68,28 @@
+@@ -64,7 +70,28 @@ const char *OpenSSL_version(int t)
          return PLATFORM;
      case OPENSSL_DIR:
  #ifdef OPENSSLDIR
@@ -53,8 +61,10 @@
  #else
          return "OPENSSLDIR: N/A";
  #endif
---- a/crypto/engine/eng_list.c
-+++ b/crypto/engine/eng_list.c
+Index: openssl/crypto/engine/eng_list.c
+===================================================================
+--- openssl.orig/crypto/engine/eng_list.c
++++ openssl/crypto/engine/eng_list.c
 @@ -11,6 +11,12 @@
  /* We need to use some engine deprecated APIs */
  #define OPENSSL_SUPPRESS_DEPRECATED
@@ -68,7 +78,7 @@
  #include "eng_local.h"
  
  /*
-@@ -415,6 +421,25 @@
+@@ -460,6 +466,25 @@ ENGINE *ENGINE_by_id(const char *id)
      if (strcmp(id, "dynamic")) {
          if ((load_dir = ossl_safe_getenv("OPENSSL_ENGINES")) == NULL)
              load_dir = ENGINESDIR;
@@ -94,19 +104,27 @@
          iterator = ENGINE_by_id("dynamic");
          if (!iterator || !ENGINE_ctrl_cmd_string(iterator, "ID", id, 0) ||
              !ENGINE_ctrl_cmd_string(iterator, "DIR_LOAD", "2", 0) ||
---- a/crypto/rand/randfile.c
-+++ b/crypto/rand/randfile.c
-@@ -312,7 +312,7 @@
+Index: openssl/crypto/rand/randfile.c
+===================================================================
+--- openssl.orig/crypto/rand/randfile.c
++++ openssl/crypto/rand/randfile.c
+@@ -312,8 +312,12 @@ const char *RAND_file_name(char *buf, si
              return NULL;
          strcpy(buf, s);
  #ifndef OPENSSL_SYS_VMS
--        strcat(buf, "/");
++#if defined(OPENSSL_SYS_WINDOWS) || defined(OPENSSL_SYS_WIN32) || defined(OPENSSL_SYS_MINGW64) || defined(OPENSSL_SYS_MINGW32)
 +        strcat(buf, "\\");
++#else
+         strcat(buf, "/");
  #endif
++#endif
          strcat(buf, RFILE);
      }
---- a/crypto/x509/x509_def.c
-+++ b/crypto/x509/x509_def.c
+ 
+Index: openssl/crypto/x509/x509_def.c
+===================================================================
+--- openssl.orig/crypto/x509/x509_def.c
++++ openssl/crypto/x509/x509_def.c
 @@ -7,6 +7,12 @@
   * https://www.openssl.org/source/license.html
   */
@@ -219,3 +237,15 @@
  }
  
  const char *X509_get_default_cert_dir_env(void)
+Index: openssl/exporters/pkg-config/libcrypto.pc.in
+===================================================================
+--- openssl.orig/exporters/pkg-config/libcrypto.pc.in
++++ openssl/exporters/pkg-config/libcrypto.pc.in
+@@ -10,6 +10,6 @@ modulesdir=${libdir}/{- $OpenSSL::safe::
+ Name: OpenSSL-libcrypto
+ Description: OpenSSL cryptography library
+ Version: {- $OpenSSL::safe::installdata::VERSION -}
+-Libs: -L${libdir} -lcrypto
++Libs: -L${libdir} -leOI32
+ Libs.private: {- join(' ', @OpenSSL::safe::installdata::LDLIBS) -}
+ Cflags: -I${includedir}

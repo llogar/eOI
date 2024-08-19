@@ -1,5 +1,7 @@
---- a/apps/openssl.c
-+++ b/apps/openssl.c
+Index: openssl/apps/openssl.c
+===================================================================
+--- openssl.orig/apps/openssl.c
++++ openssl/apps/openssl.c
 @@ -22,6 +22,7 @@
  # include <openssl/engine.h>
  #endif
@@ -8,19 +10,21 @@
  /* Needed to get the other O_xxx flags. */
  #ifdef OPENSSL_SYS_VMS
  # include <unixio.h>
-@@ -292,6 +293,9 @@
+@@ -296,6 +297,9 @@ int main(int argc, char *argv[])
          argv[0] = pname;
      }
  
 +    OSSL_PROVIDER_load(NULL, "default");
 +    OSSL_PROVIDER_load(NULL, "legacy");
 +
-     /* If there's a command, run with that, otherwise "help". */
-     ret = argc == 0 || global_help
-         ? do_cmd(prog, 1, help_argv)
---- a/crypto/provider_core.c
-+++ b/crypto/provider_core.c
-@@ -33,6 +33,10 @@
+     /*
+      * If there's no command, assume "help". If there's an override for help
+      * or version run those, otherwise run the command given.
+Index: openssl/crypto/provider_core.c
+===================================================================
+--- openssl.orig/crypto/provider_core.c
++++ openssl/crypto/provider_core.c
+@@ -34,6 +34,10 @@
  # include <openssl/self_test.h>
  #endif
  
@@ -31,7 +35,7 @@
  /*
   * This file defines and uses a number of different structures:
   *
-@@ -882,6 +886,25 @@
+@@ -919,6 +923,25 @@ static int provider_init(OSSL_PROVIDER *
  
              if (load_dir == NULL) {
                  load_dir = ossl_safe_getenv("OPENSSL_MODULES");

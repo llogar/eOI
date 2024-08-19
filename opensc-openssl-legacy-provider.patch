@@ -1,5 +1,7 @@
---- a/src/tools/pkcs15-init.c
-+++ b/src/tools/pkcs15-init.c
+Index: opensc/src/tools/pkcs15-init.c
+===================================================================
+--- opensc.orig/src/tools/pkcs15-init.c
++++ opensc/src/tools/pkcs15-init.c
 @@ -58,6 +58,7 @@
  #ifndef OPENSSL_NO_EC
  #include <openssl/ec.h>
@@ -8,7 +10,7 @@
  
  #include "common/compat_strlcpy.h"
  #include "libopensc/internal.h"
-@@ -458,6 +459,9 @@
+@@ -457,6 +458,9 @@ main(int argc, char **argv)
  		util_fatal("Unable to seed random number pool for key generation");
  #endif
  

@@ -1,7 +1,7 @@
 Vse potrebno, da se lahko prevede OpenSC eOI za Windowse s prevajalnikom mingw-w64
 
-+ openssl 39fcc351c2ce4afc13e8e797bcfa15b3089bdcf3
-+ openpace 1cc39101b14537a0da515eb1843b6fef74ccc8b5
-+ opensc dfeeac68f9cc3b26fe434ef7cfe046905a54b1d5\
++ openssl 9577662515c30910595882e6c15d7d8295fb485c
++ openpace 16f99473e0d6e14e1b8c5cba35364f30bf5f60c0
++ opensc 1ab2af78f0a7214404e9545c965b877327dc117d\
 \+
 + Inno Setup installer

@@ -1,14 +1,86 @@
---- a/src/pkcs11/framework-pkcs15.c
-+++ b/src/pkcs11/framework-pkcs15.c
-@@ -1214,7 +1214,10 @@
+From d22e389ed9edb6af5d9935131a817f5f529edf05 Mon Sep 17 00:00:00 2001
+From: Luka Logar <luka.logar@cifra.si>
+Date: Fri, 3 Nov 2023 14:52:11 +0100
+Subject: [PATCH 23/23] Fix tokeninfo SC_PKCS15_TOKEN_LOGIN_REQUIRED
+
+Fix tokeninfo SC_PKCS15_TOKEN_LOGIN_REQUIRED for non eOI cards
+---
+ src/libopensc/card-eoi.c      |  4 ++++
+ src/libopensc/cardctl.h       |  7 +++++++
+ src/pkcs11/framework-pkcs15.c | 16 +++++++++++++++-
+ 3 files changed, 26 insertions(+), 1 deletion(-)
+
+Index: opensc/src/libopensc/card-eoi.c
+===================================================================
+--- opensc.orig/src/libopensc/card-eoi.c
++++ opensc/src/libopensc/card-eoi.c
+@@ -432,6 +432,10 @@ eoi_card_ctl(sc_card_t *card, unsigned l
+ 		else
+ 			*(char **)ptr = eoi_model;
+ 		break;
++	case SC_CARDCTL_TOKENINFO_FLAGS:
++		*(int*)ptr = SC_CARDCTRL_TOKENINFO_FLAGS_HONOR_LOGIN_REQUIRED;
++		r = SC_SUCCESS;
++		break;
+ 	default:
+ 		r = sc_get_iso7816_driver()->ops->card_ctl(card, cmd, ptr);
+ 	}
+Index: opensc/src/libopensc/cardctl.h
+===================================================================
+--- opensc.orig/src/libopensc/cardctl.h
++++ opensc/src/libopensc/cardctl.h
+@@ -47,6 +47,7 @@ enum {
+ 	SC_CARDCTL_PKCS11_INIT_TOKEN,
+ 	SC_CARDCTL_PKCS11_INIT_PIN,
+ 	SC_CARDCTL_GET_MODEL,
++	SC_CARDCTL_TOKENINFO_FLAGS,
+ 
+ 	/*
+ 	 * Cryptoflex specific calls
+@@ -295,6 +296,12 @@ enum {
+ 	SC_CARDCTRL_LIFECYCLE_OTHER
+ };
+ 
++enum {
++	SC_CARDCTRL_TOKENINFO_FLAGS_HONOR_LOGIN_REQUIRED,
++	SC_CARDCTRL_TOKENINFO_FLAGS_SET_LOGIN_REQUIRED,
++	SC_CARDCTRL_TOKENINFO_FLAGS_UNSET_LOGIN_REQUIRED
++};
++
+ /*
+  * Generic cardctl - check if the required key is a default
+  * key (such as the GPK "TEST KEYTEST KEY" key, or the Cryptoflex AAK)
+Index: opensc/src/pkcs11/framework-pkcs15.c
+===================================================================
+--- opensc.orig/src/pkcs11/framework-pkcs15.c
++++ opensc/src/pkcs11/framework-pkcs15.c
+@@ -1170,6 +1170,7 @@ pkcs15_init_slot(struct sc_pkcs15_card *
+ 		}
+ 		else   {
+ 			size_t pin_len = 0;
++			int tokeninfo_flags = SC_CARDCTRL_TOKENINFO_FLAGS_SET_LOGIN_REQUIRED;
+ 			if (auth->label[0] && strncmp(auth->label, "PIN", 4) != 0)
+ 				pin_len = strlen(auth->label);
+ 			if (pin_len && get_num_slots(p15card->card) > 1) {
+@@ -1210,7 +1211,20 @@ pkcs15_init_slot(struct sc_pkcs15_card *
  					slot->token_info.label[i] = '.';
  				}
  			}
 -			slot->token_info.flags |= CKF_LOGIN_REQUIRED;
-+			if ((p15card->tokeninfo->flags & SC_PKCS15_TOKEN_LOGIN_REQUIRED) ||
-+			    ((p15card->card->type != SC_CARD_TYPE_EOI) && (p15card->card->type != SC_CARD_TYPE_EOI_CONTACTLESS)))
++			/* Let the card driver override SC_PKCS15_TOKEN_LOGIN_REQUIRED flag */
++			sc_card_ctl(p15card->card, SC_CARDCTL_TOKENINFO_FLAGS, &tokeninfo_flags);
++			switch (tokeninfo_flags) {
++			case SC_CARDCTRL_TOKENINFO_FLAGS_HONOR_LOGIN_REQUIRED:
++				if (p15card->tokeninfo->flags & SC_PKCS15_TOKEN_LOGIN_REQUIRED)
++					slot->token_info.flags |= CKF_LOGIN_REQUIRED;
++				break;
++			case SC_CARDCTRL_TOKENINFO_FLAGS_SET_LOGIN_REQUIRED:
 +				slot->token_info.flags |= CKF_LOGIN_REQUIRED;
-+
++				break;
++			case SC_CARDCTRL_TOKENINFO_FLAGS_UNSET_LOGIN_REQUIRED:
++				slot->token_info.flags &= ~CKF_LOGIN_REQUIRED;
++				break;
++			}
  		}
  	}
  

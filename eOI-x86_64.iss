@@ -4,7 +4,7 @@ ArchitecturesInstallIn64BitMode=x64
 AppName=eOI
 AppVerName=eOI
 AppPublisherURL=http://www.github.com/llogar/eOI
-DefaultDirName={pf}\eOI
+DefaultDirName={commonpf}\eOI
 OutputBaseFilename=eOI-x86_64
 DefaultGroupName=eOI
 
@@ -31,6 +31,7 @@ Type: filesandordirs; Name: "{app}\driver"
 Root: HKLM; Subkey: Software\eOI; ValueType: string; ValueName: ConfigFile; ValueData: {app}\conf\eOI.conf; Flags: uninsdeletekey;
 Root: HKLM; Subkey: Software\eOI; ValueType: string; ValueName: HomeDir; ValueData: {app}; Flags: uninsdeletekey;
 Root: HKLM; Subkey: Software\eOI; ValueType: string; ValueName: CertArea; ValueData: {app}\conf; Flags: uninsdeletekey;
+Root: HKLM; Subkey: Software\eOI; ValueType: string; ValueName: PINManagement; ValueData: {app}\bin\eOIMgmt.exe; Flags: uninsdeletekey; Components:
 
 Root: HKLM32; Subkey: Software\eOI; ValueType: string; ValueName: ConfigFile; ValueData: {app}\conf\eOI.conf; Flags: uninsdeletekey;
 Root: HKLM32; Subkey: Software\eOI; ValueType: string; ValueName: ProfilesDir; ValueData: {app}\profiles; Flags: uninsdeletekey;
@@ -62,3 +63,4 @@ Root: HKLM32; Subkey: Software\Microsoft\Cryptography\Calais\SmartCards\eOI (con
 [Run]
 Filename: {sys}\certutil.exe; WorkingDir: {app}\driver; Parameters: "-addstore Root CA.der"; StatusMsg: "Adding trusted publisher..."; Flags: waituntilterminated runhidden
 Filename: {sys}\pnputil.exe; WorkingDir: {app}\driver; Parameters: "/add-driver eOI.inf"; StatusMsg: "Installing eOI driver..."; Flags: waituntilterminated runhidden
+

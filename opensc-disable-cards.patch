@@ -1,6 +1,8 @@
---- a/etc/opensc.conf.example.in
-+++ b/etc/opensc.conf.example.in
-@@ -46,18 +46,6 @@
+Index: opensc/etc/opensc.conf.example.in
+===================================================================
+--- opensc.orig/etc/opensc.conf.example.in
++++ opensc/etc/opensc.conf.example.in
+@@ -46,18 +46,6 @@ app default {
  	# Default: empty
  	# ignored_readers = "CardMan 1021", "SPR 532";
  
@@ -19,7 +21,7 @@
  	# The following section shows definitions for PC/SC readers.
  	reader_driver pcsc {
  		# Limit command and response sizes. Some Readers don't propagate their
-@@ -110,29 +98,6 @@
+@@ -110,29 +98,6 @@ app default {
  		# provider_library = @DEFAULT_PCSC_PROVIDER@
  	}
  
@@ -49,7 +51,7 @@
  	# Allowlist of card drivers to load at start-up
  	#
  	# The supported internal card driver names can be retrieved
-@@ -149,67 +114,7 @@
+@@ -149,67 +114,7 @@ app default {
  	# Default: internal
  	# NOTE: When "internal" keyword is used, must be last entry
  	#
@@ -118,7 +120,7 @@
  
  	card_driver eoi {
  		# CAN is required to establish connection
-@@ -226,686 +131,6 @@
+@@ -226,690 +131,6 @@ app default {
  		# in the 'pkcs11' section below
  	}
  
@@ -712,6 +714,10 @@
 -		notify_pin_bad_text = "GoID ist gesperrt";
 -	}
 -
+-	# Disable PKCS#1 v1.5 padding in HW.
+-	# Default: decipher
+-	# disable_hw_pkcs1_padding = both;
+-
 -	secure_messaging local_authentic  {
 -		# name of external SM module
 -		# module_name = @DEFAULT_SM_MODULE@;
@@ -805,7 +811,7 @@
  	# Below are the framework specific configuration blocks.
  
  	# PKCS #15
-@@ -968,17 +193,6 @@
+@@ -972,17 +193,6 @@ app default {
  		# Default: internal;
  		# builtin_emulators = old, internal;
  
@@ -823,7 +829,7 @@
  		# Enable initialization and card recognition in PKCS#11 layer.
  		# Default: no
  		# pkcs11_enable_InitToken = yes;
-@@ -994,27 +208,6 @@
+@@ -998,27 +208,6 @@ app default {
  		#            default 'false'
  		# - user_pin and sign_pin: labels of PIN objects that will be used as
  		#            user & sign PINs. Otherwise the first suitable one will be used.
@@ -851,7 +857,7 @@
  		# Slovenian eID - low level (pinless, "Prijava brez PIN-a")
  		application E828BD080F014E585031 {
  			model = "ChipDocLite";
-@@ -1039,7 +232,7 @@
+@@ -1043,7 +232,7 @@ app opensc-pkcs11 {
  		# If there are more slots than defined here,
  		# the remaining slots will be hidden from PKCS#11.
  		# Default: 16
@@ -860,7 +866,7 @@
  
  		# Maximum number of slots per smart card.
  		# If the card has fewer keys than defined here,
-@@ -1122,7 +315,7 @@
+@@ -1126,7 +315,7 @@ app opensc-pkcs11 {
  		#       #   modes 00 and 01 of ISO command 'RESET RETRY COUNTER'. --vt
  		#
  		# Default: none
@@ -869,7 +875,7 @@
  
  		# Create slot for unblocking PIN with PUK
  		# This way PKCS#11 API can be used to login with PUK and
-@@ -1156,34 +349,3 @@
+@@ -1160,34 +349,3 @@ app opensc-pkcs11 {
  		# create_slots_for_pins = "user"
  	}
  }
@@ -904,21 +910,26 @@
 -# Used by OpenSC minidriver on Windows only
 -app cardmod {
 -}
---- a/src/libopensc/ctx.c
-+++ b/src/libopensc/ctx.c
-@@ -105,59 +105,59 @@
+Index: opensc/src/libopensc/ctx.c
+===================================================================
+--- opensc.orig/src/libopensc/ctx.c
++++ opensc/src/libopensc/ctx.c
+@@ -106,61 +106,61 @@ static const struct _sc_driver_entry int
  	/* The card handled by skeid shares the ATR with other cards running CardOS 5.4.
  	 * In order to prevent the cardos driver from matching skeid cards, skeid driver
  	 * precedes cardos and matches no other CardOS 5.4 card. */
 -	{ "skeid",	(void *(*)(void)) sc_get_skeid_driver },
++//	{ "skeid",	(void *(*)(void)) sc_get_skeid_driver },
+ 	/* The card handled by dtrust shares the ATR with other cards running CardOS 5.4.
+ 	 * In order to prevent the cardos driver from matching dtrust cards, dtrust driver
+ 	 * precedes cardos and matches no other CardOS 5.4 card. */
+-	{ "dtrust",	(void *(*)(void)) sc_get_dtrust_driver },
 -	{ "cardos",	(void *(*)(void)) sc_get_cardos_driver },
--	{ "cyberflex",	(void *(*)(void)) sc_get_cyberflex_driver },
 -	{ "gemsafeV1",	(void *(*)(void)) sc_get_gemsafeV1_driver },
 -	{ "starcos",	(void *(*)(void)) sc_get_starcos_driver },
 -	{ "tcos",	(void *(*)(void)) sc_get_tcos_driver },
-+//	{ "skeid",	(void *(*)(void)) sc_get_skeid_driver },
++//	{ "dtrust",	(void *(*)(void)) sc_get_dtrust_driver },
 +//	{ "cardos",	(void *(*)(void)) sc_get_cardos_driver },
-+//	{ "cyberflex",	(void *(*)(void)) sc_get_cyberflex_driver },
 +//	{ "gemsafeV1",	(void *(*)(void)) sc_get_gemsafeV1_driver },
 +//	{ "starcos",	(void *(*)(void)) sc_get_starcos_driver },
 +//	{ "tcos",	(void *(*)(void)) sc_get_tcos_driver },
@@ -948,7 +959,7 @@
 +//	{ "myeid",      (void *(*)(void)) sc_get_myeid_driver },
  #if defined(ENABLE_OPENSSL) && defined(ENABLE_SM)
 -	{ "dnie",       (void *(*)(void)) sc_get_dnie_driver },
-+//	{ "dnie",       (void *(*)(void)) sc_get_dnie_driver },
++//	"dnie",       (void *(*)(void)) sc_get_dnie_driver },
  #endif
 -	{ "masktech",	(void *(*)(void)) sc_get_masktech_driver },
 -	{ "esteid2018",	(void *(*)(void)) sc_get_esteid2018_driver },
@@ -970,7 +981,6 @@
  	 * put the muscle driver first to cope with this bug. */
 -	{ "muscle",	(void *(*)(void)) sc_get_muscle_driver },
 -	{ "sc-hsm",	(void *(*)(void)) sc_get_sc_hsm_driver },
--	{ "mcrd",	(void *(*)(void)) sc_get_mcrd_driver },
 -	{ "setcos",	(void *(*)(void)) sc_get_setcos_driver },
 -	{ "PIV-II",	(void *(*)(void)) sc_get_piv_driver },
 -	{ "cac",	(void *(*)(void)) sc_get_cac_driver },
@@ -978,7 +988,6 @@
 -	{ "isoApplet",	(void *(*)(void)) sc_get_isoApplet_driver },
 +//	{ "muscle",	(void *(*)(void)) sc_get_muscle_driver },
 +//	{ "sc-hsm",	(void *(*)(void)) sc_get_sc_hsm_driver },
-+//	{ "mcrd",	(void *(*)(void)) sc_get_mcrd_driver },
 +//	{ "setcos",	(void *(*)(void)) sc_get_setcos_driver },
 +//	{ "PIV-II",	(void *(*)(void)) sc_get_piv_driver },
 +//	{ "cac",	(void *(*)(void)) sc_get_cac_driver },
@@ -1001,39 +1010,34 @@
  #if defined(ENABLE_SM) && defined(ENABLE_OPENPACE)
  	{ "eOI",	(void *(*)(void)) sc_get_eoi_driver },
  #endif
-@@ -168,15 +168,15 @@
+@@ -171,11 +171,11 @@ static const struct _sc_driver_entry int
  };
  
  static const struct _sc_driver_entry old_card_drivers[] = {
--	{ "akis",       (void *(*)(void)) sc_get_akis_driver },
 -	{ "asepcos",    (void *(*)(void)) sc_get_asepcos_driver },
 -	{ "atrust-acos",(void *(*)(void)) sc_get_atrust_acos_driver },
+-	{ "cyberflex",	(void *(*)(void)) sc_get_cyberflex_driver },
 -	{ "flex",       (void *(*)(void)) sc_get_cryptoflex_driver },
-+//	{ "akis",       (void *(*)(void)) sc_get_akis_driver },
+-	{ "mcrd",       (void *(*)(void)) sc_get_mcrd_driver },
 +//	{ "asepcos",    (void *(*)(void)) sc_get_asepcos_driver },
 +//	{ "atrust-acos",(void *(*)(void)) sc_get_atrust_acos_driver },
++//	{ "cyberflex",	(void *(*)(void)) sc_get_cyberflex_driver },
 +//	{ "flex",       (void *(*)(void)) sc_get_cryptoflex_driver },
- #ifdef ENABLE_OPENSSL
--    { "gpk",        (void *(*)(void)) sc_get_gpk_driver },
-+//	{ "gpk",        (void *(*)(void)) sc_get_gpk_driver },
- #endif
--	{ "incrypto34", (void *(*)(void)) sc_get_incrypto34_driver },
--	{ "westcos",    (void *(*)(void)) sc_get_westcos_driver },
-+//	{ "incrypto34", (void *(*)(void)) sc_get_incrypto34_driver },
-+//	{ "westcos",    (void *(*)(void)) sc_get_westcos_driver },
++//	{ "mcrd",       (void *(*)(void)) sc_get_mcrd_driver },
  	{ NULL, NULL }
  };
+ // clang-format on
+Index: opensc/src/libopensc/pkcs15-syn.c
+===================================================================
+--- opensc.orig/src/libopensc/pkcs15-syn.c
++++ opensc/src/libopensc/pkcs15-syn.c
+@@ -37,37 +37,37 @@
  
---- a/src/libopensc/pkcs15-syn.c
-+++ b/src/libopensc/pkcs15-syn.c
-@@ -36,40 +36,40 @@
- #include "pkcs15-emulator-filter.h"
- 
+ // clang-format off
  struct sc_pkcs15_emulator_handler builtin_emulators[] = {
 -	{ "openpgp",	sc_pkcs15emu_openpgp_init_ex	},
 -	{ "starcert",	sc_pkcs15emu_starcert_init_ex	},
 -	{ "tcos",	sc_pkcs15emu_tcos_init_ex	},
--	{ "esteid",	sc_pkcs15emu_esteid_init_ex	},
 -	{ "itacns",	sc_pkcs15emu_itacns_init_ex	},
 -	{ "PIV-II",     sc_pkcs15emu_piv_init_ex	},
 -	{ "cac",        sc_pkcs15emu_cac_init_ex	},
@@ -1057,7 +1061,6 @@
 +//	{ "openpgp",	sc_pkcs15emu_openpgp_init_ex	},
 +//	{ "starcert",	sc_pkcs15emu_starcert_init_ex	},
 +//	{ "tcos",	sc_pkcs15emu_tcos_init_ex	},
-+//	{ "esteid",	sc_pkcs15emu_esteid_init_ex	},
 +//	{ "itacns",	sc_pkcs15emu_itacns_init_ex	},
 +//	{ "PIV-II",     sc_pkcs15emu_piv_init_ex	},
 +//	{ "cac",        sc_pkcs15emu_cac_init_ex	},
@@ -1083,16 +1086,12 @@
  };
  
  struct sc_pkcs15_emulator_handler old_emulators[] = {
--	{ "westcos",	sc_pkcs15emu_westcos_init_ex	},
--	{ "gemsafeGPK",	sc_pkcs15emu_gemsafeGPK_init_ex	},
 -	{ "atrust-acos",sc_pkcs15emu_atrust_acos_init_ex},
 -	{ "actalis",	sc_pkcs15emu_actalis_init_ex	},
 -	{ "tccardos",	sc_pkcs15emu_tccardos_init_ex	},
-+//	{ "westcos",	sc_pkcs15emu_westcos_init_ex	},
-+//	{ "gemsafeGPK",	sc_pkcs15emu_gemsafeGPK_init_ex	},
 +//	{ "atrust-acos",sc_pkcs15emu_atrust_acos_init_ex},
 +//	{ "actalis",	sc_pkcs15emu_actalis_init_ex	},
 +//	{ "tccardos",	sc_pkcs15emu_tccardos_init_ex	},
  	{ NULL, NULL }
- };	
- 
+ };
+ // clang-format on

@@ -1,80 +1,47 @@
---- a/src/minidriver/minidriver.c
-+++ b/src/minidriver/minidriver.c
-@@ -36,7 +36,11 @@
- #include <time.h>
- 
- #include <windows.h>
--#include <Commctrl.h>
-+#pragma push_macro("NTDDI_VERSION")
-+#undef NTDDI_VERSION
-+#define NTDDI_VERSION 0x06000000
-+#include <commctrl.h>
-+#pragma pop_macro("NTDDI_VERSION")
- 
- static unsigned int timeGetTime()
- {
-@@ -826,7 +826,7 @@
- md_is_guid_as_label(PCARD_DATA pCardData)
- {
- 	logprintf(pCardData, 2, "Is GUID has to be used as label of crypto objects?\n");
--	return md_get_config_bool(pCardData, "md_guid_as_label", FALSE);
-+	return md_get_config_bool(pCardData, "md_guid_as_label", TRUE);
+Index: opensc/src/minidriver/minidriver.c
+===================================================================
+--- opensc.orig/src/minidriver/minidriver.c
++++ opensc/src/minidriver/minidriver.c
+@@ -3064,6 +3064,8 @@ static HRESULT CALLBACK md_dialog_proc(H
  }
  
  
-@@ -1048,7 +1052,7 @@
- 	memset(new_dir, 0, sizeof(struct md_directory));
++static HMODULE comctl32 = NULL;
++static HRESULT (*TaskDialogIndirectPtr)(const TASKDIALOGCONFIG *pTaskConfig, int *pnButton, int *pnRadioButton, BOOL *pfVerificationFlagChecked);
  
- 	strlcpy((char *)new_dir->name, name, sizeof(new_dir->name));
--	new_dir->acl = acl;
-+	new_dir->acl = (CARD_DIRECTORY_ACCESS_CONDITION)acl;
+ static int 
+ md_dialog_perform_pin_operation(PCARD_DATA pCardData, int operation, struct sc_pkcs15_card *p15card,
+@@ -3166,7 +3168,12 @@ md_dialog_perform_pin_operation(PCARD_DA
+ 	tc.lpCallbackData = (LONG_PTR)parameter;
+ 	tc.cbSize = sizeof(tc);
  
- 	if (*head == NULL)   {
- 		*head = new_dir;
-@@ -2195,7 +2199,7 @@
- 	if (dwret != SCARD_S_SUCCESS)
- 		goto ret_cleanup;
+-	result = TaskDialogIndirect(&tc, NULL, NULL, &user_checked);
++	if (comctl32 == NULL)
++		comctl32 = LoadLibrary("COMCTL32.DLL");
++	if (comctl32 != NULL)
++		TaskDialogIndirectPtr = (void*)GetProcAddress(comctl32, "TaskDialogIndirect");
++	if (TaskDialogIndirectPtr != NULL)
++		result = TaskDialogIndirectPtr(&tc, NULL, NULL, &user_checked);
  
--	dwret = md_fs_add_directory(pCardData, &(vs->root.subdirs), "mscp", UserCreateDeleteDirAc, &mscp);
-+	dwret = md_fs_add_directory(pCardData, &(vs->root.subdirs), "mscp", (CARD_FILE_ACCESS_CONDITION)UserCreateDeleteDirAc, &mscp);
- 	if (dwret != SCARD_S_SUCCESS)
- 		goto ret_cleanup;
- 
-@@ -4978,6 +4982,7 @@
- 				dwret = SCARD_E_INVALID_VALUE;
- 				goto err;
+ 	if (user_checked != checked) {
+ 		if (pv && pv->ctx && pv->ctx->exe_path) {
+Index: opensc/src/libopensc/pkcs15-eoi.c
+===================================================================
+--- opensc.orig/src/libopensc/pkcs15-eoi.c
++++ opensc/src/libopensc/pkcs15-eoi.c
+@@ -111,6 +111,7 @@ int sc_pkcs15emu_eoi_init_ex(struct sc_p
+ 	 *       2 - for pinless entry (Prijava brez PIN-a), maps to 0xA1
+ 	 *       1 - for authentication in QES app (Podpis in prijava), maps to 0xA1
+ 	 *       3 - for signing in QES app (Podpis in prijava), maps to 0xA2
++	 * 3) The card falsely advertises DERIVE usage for private keys. Mask it out, as the only operation the card supports is SIGN
+ 	 */
+ 	memset(&sk, 0, sizeof(sk));
+ 	sk.class_mask = SC_PKCS15_SEARCH_CLASS_PRKEY;
+@@ -130,6 +131,7 @@ int sc_pkcs15emu_eoi_init_ex(struct sc_p
+ 		if (prkey_info) {
+ 			privdata->prkey_mappings[j][0] = prkey_info->key_reference;
+ 			privdata->prkey_mappings[j++][1] = 0xA0 + (i + 1);
++			prkey_info->usage &= ~SC_PKCS15_PRKEY_USAGE_DERIVE;
  		}
-+		opt_crypt_flags &= ~SC_ALGORITHM_RSA_PADS;
- 	} else {
- 		logprintf(pCardData, 0, "invalid private key\n");
- 		dwret = SCARD_E_INVALID_VALUE;
-@@ -6447,8 +6452,19 @@
- 		if (dwFlags >= MD_MAX_PINS)
- 			MD_FUNC_RETURN(pCardData, 1, SCARD_E_INVALID_PARAMETER);
+ 	}
  
--		if (!vs->pin_objs[dwFlags])
-+		if (!vs->pin_objs[dwFlags]) {
-+			if (dwFlags == ROLE_EVERYONE) {
-+				/* Return dummy values for non-existing PIN, so eOI 'Prijava brez PIN-a' works */
-+				p->PinPurpose = PrimaryCardPin;
-+				p->PinCachePolicy.dwVersion = PIN_CACHE_POLICY_CURRENT_VERSION;
-+				p->PinCachePolicy.PinCachePolicyType = PinCacheNone;
-+				p->PinCachePolicy.dwPinCachePolicyInfo = 0;
-+				p->dwChangePermission = 0;
-+				p->dwUnblockPermission = 0;
-+				MD_FUNC_RETURN(pCardData, 1, SC_SUCCESS);
-+			}
- 			MD_FUNC_RETURN(pCardData, 1, SCARD_E_INVALID_PARAMETER);
-+		}
- 
- 		p->PinType = vs->reader->capabilities & SC_READER_CAP_PIN_PAD
- 			|| vs->p15card->card->caps & SC_CARD_CAP_PROTECTED_AUTHENTICATION_PATH
-@@ -7239,7 +7243,7 @@
- 	{
- 	case DLL_PROCESS_ATTACH:
- 		g_inst = hinstDLL;
--		sc_notify_instance = hinstDLL;
-+//		sc_notify_instance = hinstDLL;
- 		sc_notify_init();
- 		break;
- 	case DLL_PROCESS_DETACH:

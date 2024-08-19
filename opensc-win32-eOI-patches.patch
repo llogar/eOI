@@ -1,6 +1,8 @@
---- a/configure.ac
-+++ b/configure.ac
-@@ -2,22 +2,22 @@
+Index: opensc/configure.ac
+===================================================================
+--- opensc.orig/configure.ac
++++ opensc/configure.ac
+@@ -2,22 +2,22 @@ dnl -*- mode: m4; -*-
  
  AC_PREREQ(2.68)
  
@@ -13,8 +15,8 @@
 +define([PRODUCT_BUGREPORT], [https://github.com/llogar/eOI/issues])
 +define([PRODUCT_URL], [https://github.com/llogar/eOI])
  define([PACKAGE_VERSION_MAJOR], [0])
- define([PACKAGE_VERSION_MINOR], [23])
- define([PACKAGE_VERSION_FIX], [0])
+ define([PACKAGE_VERSION_MINOR], [25])
+ define([PACKAGE_VERSION_FIX], [1])
  define([PACKAGE_SUFFIX], [])
  
  define([VS_FF_LEGAL_COPYRIGHT], [OpenSC Project])
@@ -32,7 +34,7 @@
  
  m4_sinclude(m4/version.m4.ci)
  
-@@ -799,7 +799,7 @@
+@@ -798,7 +798,7 @@ fi
  if test "${cvcdir}" = "" ; then
  	case "${host}" in
  		*-mingw*|*-winnt*|*-cygwin*)
@@ -41,7 +43,7 @@
  			;;
  		*)
  			AC_MSG_WARN([use --enable-cvcdir=DIR])
-@@ -826,7 +826,7 @@
+@@ -825,7 +825,7 @@ if test -z "${x509dir}"
  then
  	case "${host}" in
  		*-mingw*|*-winnt*|*-cygwin*)
@@ -50,7 +52,7 @@
  			;;
  		*)
  			AC_MSG_WARN([use --enable-x509dir=DIR])
-@@ -973,7 +973,7 @@
+@@ -972,7 +972,7 @@ if test "${enable_sm}" = "yes"; then
  	DEFAULT_SM_MODULE="${LIB_PRE}smm-local${DYN_LIB_EXT}"
  	case "${host}" in
  		*-mingw*|*-winnt*|*-cygwin*)
@@ -59,9 +61,11 @@
  		;;
  		*)
  			DEFAULT_SM_MODULE_PATH="${libdir}"
---- a/src/libopensc/card.c
-+++ b/src/libopensc/card.c
-@@ -1576,7 +1576,7 @@
+Index: opensc/src/libopensc/card.c
+===================================================================
+--- opensc.orig/src/libopensc/card.c
++++ opensc/src/libopensc/card.c
+@@ -1581,7 +1581,7 @@ sc_card_sm_load(struct sc_card *card, co
  #ifdef _WIN32
  	if (!module_path || strlen(module_path) == 0)   {
  		temp_len = PATH_MAX-1;
@@ -70,9 +74,11 @@
  				temp_path, &temp_len);
  		if (rv == SC_SUCCESS) {
  			temp_path[temp_len] = '\0';
---- a/src/libopensc/ctx.c
-+++ b/src/libopensc/ctx.c
-@@ -213,7 +213,7 @@
+Index: opensc/src/libopensc/ctx.c
+===================================================================
+--- opensc.orig/src/libopensc/ctx.c
++++ opensc/src/libopensc/ctx.c
+@@ -213,7 +213,7 @@ sc_ctx_win32_get_config_value(const char
  		return SC_ERROR_INVALID_ARGUMENTS;
  
  	if (!name_key)
@@ -81,7 +87,7 @@
  
  	rc = RegOpenKeyExA(HKEY_CURRENT_USER, name_key, 0, KEY_QUERY_VALUE, &hKey);
  	if (rc == ERROR_SUCCESS) {
-@@ -700,7 +700,7 @@
+@@ -715,7 +715,7 @@ static void process_config_file(sc_conte
  	memset(ctx->conf_blocks, 0, sizeof(ctx->conf_blocks));
  #ifdef _WIN32
  	temp_len = PATH_MAX-1;
@@ -90,7 +96,7 @@
  		temp_path, &temp_len);
  	if (r)   {
  		sc_log(ctx, "process_config_file doesn't find opensc config file. Please set the registry key.");
-@@ -708,6 +708,8 @@
+@@ -723,6 +723,8 @@ static void process_config_file(sc_conte
  	}
  	temp_path[temp_len] = '\0';
  	conf_path = temp_path;
@@ -99,49 +105,11 @@
  #else
  	conf_path = getenv("OPENSC_CONF");
  	if (!conf_path)
---- a/src/minidriver/cardmod-mingw-compat.h
-+++ b/src/minidriver/cardmod-mingw-compat.h
-@@ -22,21 +22,14 @@
- #define __deref_opt_out_bcount(x)
- #define __deref_out_bcount(x)
- #define __deref_out_bcount_opt(x)
--#define __deref_out_ecount(x)
- #define __in
--#define __in_bcount(x)
- #define __in_bcount_opt(x)
--#define __in_ecount(x)
- #define __in_opt
- #define __inout
--#define __inout_bcount_full(x)
- #define __inout_bcount_opt(x)
- #define __out
--#define __out_bcount(x)
--#define __out_bcount_full(x)
- #define __out_bcount_part_opt(x,y)
- #define __out_bcount_part_opt(x,y)
--#define __out_ecount(x)
- #define __out_opt
- #define __struct_bcount(x)
- #define __success(x)
---- a/src/minidriver/minidriver.c
-+++ b/src/minidriver/minidriver.c
-@@ -37,8 +37,13 @@
- 
- #include <windows.h>
- #include <Commctrl.h>
--#include <timeapi.h>
--#include "cardmod.h"
-+
-+static unsigned int timeGetTime()
-+{
-+ struct timeval now;
-+ mingw_gettimeofday(&now, NULL);
-+ return now.tv_usec/1000;
-+}
- 
- #include "common/compat_strlcpy.h"
- #include "libopensc/asn1.h"
-@@ -146,7 +151,7 @@
+Index: opensc/src/minidriver/minidriver.c
+===================================================================
+--- opensc.orig/src/minidriver/minidriver.c
++++ opensc/src/minidriver/minidriver.c
+@@ -150,7 +150,7 @@ HINSTANCE g_inst;
   /* defined twice: in versioninfo-minidriver.rc.in and in minidriver.c */
  #define IDI_SMARTCARD   102
  
@@ -150,7 +118,7 @@
  
  /* magic to determine previous pinpad authentication */
  #define MAGIC_SESSION_PIN "opensc-minidriver"
-@@ -261,7 +266,7 @@
+@@ -268,7 +268,7 @@ static void logprintf(PCARD_DATA pCardDa
  	int rv;
  
  	rv = sc_ctx_win32_get_config_value("CARDMOD_LOW_LEVEL_DEBUG",
@@ -159,41 +127,10 @@
  			(char *)(&md_debug), &sz);
  	if (rv == SC_SUCCESS && md_debug != 0)   {
  		FILE *lldebugfp = fopen("C:\\tmp\\md.log","a+");
-@@ -3053,6 +3058,8 @@
- }
- 
- 
-+static HMODULE comctl32 = NULL;
-+static HRESULT (*TaskDialogIndirectPtr)(const TASKDIALOGCONFIG *pTaskConfig, int *pnButton, int *pnRadioButton, BOOL *pfVerificationFlagChecked);
- 
- static int 
- md_dialog_perform_pin_operation(PCARD_DATA pCardData, int operation, struct sc_pkcs15_card *p15card,
-@@ -3068,6 +3075,13 @@
- 	BOOL checked, user_checked;
- 	VENDOR_SPECIFIC* pv = (VENDOR_SPECIFIC*)(pCardData->pvVendorSpecific);
- 
-+	if (comctl32 == NULL) {
-+		comctl32 = LoadLibrary("COMCTL32.DLL");
-+		if (comctl32 != NULL) {
-+			TaskDialogIndirectPtr = (void*)GetProcAddress(comctl32, "TaskDialogIndirect");
-+		}
-+	}
-+
- 	/* stack the parameters */
- 	parameter[0] = (LONG_PTR)operation;
- 	parameter[1] = (LONG_PTR)p15card;
-@@ -3156,7 +3170,8 @@
- 	tc.lpCallbackData = (LONG_PTR)parameter;
- 	tc.cbSize = sizeof(tc);
- 
--	result = TaskDialogIndirect(&tc, NULL, NULL, &user_checked);
-+	if (TaskDialogIndirectPtr)
-+		result = TaskDialogIndirectPtr(&tc, NULL, NULL, &user_checked);
- 
- 	if (user_checked != checked) {
- 		if (pv && pv->ctx && pv->ctx->exe_path) {
---- a/src/minidriver/versioninfo-minidriver.rc.in
-+++ b/src/minidriver/versioninfo-minidriver.rc.in
+Index: opensc/src/minidriver/versioninfo-minidriver.rc.in
+===================================================================
+--- opensc.orig/src/minidriver/versioninfo-minidriver.rc.in
++++ opensc/src/minidriver/versioninfo-minidriver.rc.in
 @@ -1,5 +1,7 @@
  #include <winresrc.h>
  
@@ -202,7 +139,7 @@
  #define IDC_STATIC -1
  /* defined twice: in resource file and in source code */
  #define IDI_SMARTCARD       102
-@@ -31,7 +33,6 @@
+@@ -31,7 +33,6 @@ BEGIN
  			VALUE "CompanyName", "@OPENSC_VS_FF_COMPANY_NAME@"
  			VALUE "FileVersion", "@OPENSC_VERSION_MAJOR@.@OPENSC_VERSION_MINOR@.@OPENSC_VERSION_FIX@.@OPENSC_VERSION_REVISION@"
  			VALUE "InternalName", "@PACKAGE_NAME@"
@@ -210,9 +147,11 @@
  			VALUE "LegalTrademarks", ""
  			VALUE "PrivateBuild", ""
  			VALUE "ProductName", "@OPENSC_VS_FF_PRODUCT_NAME@"
---- a/src/pkcs11/pkcs11-spy.c
-+++ b/src/pkcs11/pkcs11-spy.c
-@@ -228,9 +228,9 @@
+Index: opensc/src/pkcs11/pkcs11-spy.c
+===================================================================
+--- opensc.orig/src/pkcs11/pkcs11-spy.c
++++ opensc/src/pkcs11/pkcs11-spy.c
+@@ -231,9 +231,9 @@ init_spy(void)
  		/* try for the machine version first, as we may be running
  		 * without a user during login
  		 */
@@ -224,7 +163,7 @@
  
  		if( rc == ERROR_SUCCESS ) {
  			temp_len = PATH_MAX;
-@@ -263,10 +263,10 @@
+@@ -266,10 +266,10 @@ init_spy(void)
  		/* try for the machine version first, as we may be running
  		 * without a user during login
  		 */
@@ -237,8 +176,10 @@
  					0, KEY_QUERY_VALUE, &hKey );
  
  		if (rc == ERROR_SUCCESS) {
---- a/src/pkcs11/versioninfo-pkcs11-spy.rc.in
-+++ b/src/pkcs11/versioninfo-pkcs11-spy.rc.in
+Index: opensc/src/pkcs11/versioninfo-pkcs11-spy.rc.in
+===================================================================
+--- opensc.orig/src/pkcs11/versioninfo-pkcs11-spy.rc.in
++++ opensc/src/pkcs11/versioninfo-pkcs11-spy.rc.in
 @@ -1,5 +1,7 @@
  #include <winresrc.h>
  
@@ -247,7 +188,7 @@
  VS_VERSION_INFO VERSIONINFO
  	FILEVERSION @OPENSC_VERSION_MAJOR@,@OPENSC_VERSION_MINOR@,@OPENSC_VERSION_FIX@,@OPENSC_VERSION_REVISION@
  	PRODUCTVERSION @OPENSC_VERSION_MAJOR@,@OPENSC_VERSION_MINOR@,@OPENSC_VERSION_FIX@,@OPENSC_VERSION_REVISION@
-@@ -21,7 +23,6 @@
+@@ -21,7 +23,6 @@ BEGIN
  			VALUE "CompanyName", "@OPENSC_VS_FF_COMPANY_NAME@"
  			VALUE "FileVersion", "@OPENSC_VERSION_MAJOR@.@OPENSC_VERSION_MINOR@.@OPENSC_VERSION_FIX@.@OPENSC_VERSION_REVISION@"
  			VALUE "InternalName", "@PACKAGE_NAME@"
@@ -255,8 +196,10 @@
  			VALUE "LegalTrademarks", ""
  			VALUE "PrivateBuild", ""
  			VALUE "ProductName", "@OPENSC_VS_FF_PRODUCT_NAME@"
---- a/src/pkcs11/versioninfo-pkcs11.rc.in
-+++ b/src/pkcs11/versioninfo-pkcs11.rc.in
+Index: opensc/src/pkcs11/versioninfo-pkcs11.rc.in
+===================================================================
+--- opensc.orig/src/pkcs11/versioninfo-pkcs11.rc.in
++++ opensc/src/pkcs11/versioninfo-pkcs11.rc.in
 @@ -1,5 +1,7 @@
  #include <winresrc.h>
  
@@ -265,7 +208,7 @@
  VS_VERSION_INFO VERSIONINFO
  	FILEVERSION @OPENSC_VERSION_MAJOR@,@OPENSC_VERSION_MINOR@,@OPENSC_VERSION_FIX@,@OPENSC_VERSION_REVISION@
  	PRODUCTVERSION @OPENSC_VERSION_MAJOR@,@OPENSC_VERSION_MINOR@,@OPENSC_VERSION_FIX@,@OPENSC_VERSION_REVISION@
-@@ -21,7 +23,6 @@
+@@ -21,7 +23,6 @@ BEGIN
  			VALUE "CompanyName", "@OPENSC_VS_FF_COMPANY_NAME@"
  			VALUE "FileVersion", "@OPENSC_VERSION_MAJOR@.@OPENSC_VERSION_MINOR@.@OPENSC_VERSION_FIX@.@OPENSC_VERSION_REVISION@"
  			VALUE "InternalName", "@PACKAGE_NAME@"
@@ -273,9 +216,11 @@
  			VALUE "LegalTrademarks", ""
  			VALUE "PrivateBuild", ""
  			VALUE "ProductName", "@OPENSC_VS_FF_PRODUCT_NAME@"
---- a/src/pkcs15init/profile.c
-+++ b/src/pkcs15init/profile.c
-@@ -343,7 +343,7 @@
+Index: opensc/src/pkcs15init/profile.c
+===================================================================
+--- opensc.orig/src/pkcs15init/profile.c
++++ opensc/src/pkcs15init/profile.c
+@@ -344,7 +344,7 @@ sc_profile_load(struct sc_profile *profi
  	if (!profile_dir) {
  #ifdef _WIN32
  		temp_len = PATH_MAX - 1;
@@ -284,9 +229,11 @@
  				temp_path, &temp_len);
  		if (res)
  			LOG_FUNC_RETURN(ctx, res);
---- a/src/tools/Makefile.am
-+++ b/src/tools/Makefile.am
-@@ -119,10 +119,13 @@
+Index: opensc/src/tools/Makefile.am
+===================================================================
+--- opensc.orig/src/tools/Makefile.am
++++ opensc/src/tools/Makefile.am
+@@ -120,6 +120,9 @@ egk_tool_CFLAGS = $(OPTIONAL_ZLIB_CFLAGS
  if HAVE_UNKNOWN_WARNING_OPTION
  egk_tool_CFLAGS += -Wno-unknown-warning-option
  endif
@@ -296,14 +243,11 @@
  
  goid_tool_SOURCES = goid-tool.c util.c fread_to_eof.c goid-tool-cmdline.c
  goid_tool_LDADD = $(OPENPACE_LIBS)
--goid_tool_CFLAGS = $(OPENPACE_CFLAGS)
-+goid_tool_CFLAGS = $(OPENSSL_CFLAGS) $(OPENPACE_CFLAGS)
- if HAVE_UNKNOWN_WARNING_OPTION
- goid_tool_CFLAGS += -Wno-unknown-warning-option
- endif
---- a/src/tools/util.c
-+++ b/src/tools/util.c
-@@ -471,8 +471,8 @@
+Index: opensc/src/tools/util.c
+===================================================================
+--- opensc.orig/src/tools/util.c
++++ opensc/src/tools/util.c
+@@ -471,8 +471,8 @@ util_getpass (char **lineptr, size_t *le
  	}
  #ifndef _WIN32
  	tcsetattr (fileno (stdout), TCSAFLUSH, &old);
@@ -313,8 +257,10 @@
  	if (ch == 0 || ch == 3) {
  		free(buf);
  		return -1;
---- a/src/tools/versioninfo-opensc-notify.rc.in
-+++ b/src/tools/versioninfo-opensc-notify.rc.in
+Index: opensc/src/tools/versioninfo-opensc-notify.rc.in
+===================================================================
+--- opensc.orig/src/tools/versioninfo-opensc-notify.rc.in
++++ opensc/src/tools/versioninfo-opensc-notify.rc.in
 @@ -1,5 +1,7 @@
  #include <winresrc.h>
  
@@ -323,7 +269,7 @@
  #define IDC_STATIC -1
  /* defined twice: in resource file and in source code */
  #define IDI_SMARTCARD       102
-@@ -31,7 +33,6 @@
+@@ -31,7 +33,6 @@ BEGIN
  			VALUE "CompanyName", "@OPENSC_VS_FF_COMPANY_NAME@"
  			VALUE "FileVersion", "@OPENSC_VERSION_MAJOR@.@OPENSC_VERSION_MINOR@.@OPENSC_VERSION_FIX@.@OPENSC_VERSION_REVISION@"
  			VALUE "InternalName", "@PACKAGE_NAME@"
@@ -331,8 +277,10 @@
  			VALUE "LegalTrademarks", ""
  			VALUE "PrivateBuild", ""
  			VALUE "ProductName", "@OPENSC_VS_FF_PRODUCT_NAME@"
---- a/src/tools/versioninfo-tools.rc.in
-+++ b/src/tools/versioninfo-tools.rc.in
+Index: opensc/src/tools/versioninfo-tools.rc.in
+===================================================================
+--- opensc.orig/src/tools/versioninfo-tools.rc.in
++++ opensc/src/tools/versioninfo-tools.rc.in
 @@ -1,5 +1,7 @@
  #include <winresrc.h>
  
@@ -341,7 +289,7 @@
  VS_VERSION_INFO VERSIONINFO
  	FILEVERSION @OPENSC_VERSION_MAJOR@,@OPENSC_VERSION_MINOR@,@OPENSC_VERSION_FIX@,@OPENSC_VERSION_REVISION@
  	PRODUCTVERSION @OPENSC_VERSION_MAJOR@,@OPENSC_VERSION_MINOR@,@OPENSC_VERSION_FIX@,@OPENSC_VERSION_REVISION@
-@@ -21,7 +23,6 @@
+@@ -21,7 +23,6 @@ BEGIN
  			VALUE "CompanyName", "@OPENSC_VS_FF_COMPANY_NAME@"
  			VALUE "FileVersion", "@OPENSC_VERSION_MAJOR@.@OPENSC_VERSION_MINOR@.@OPENSC_VERSION_FIX@.@OPENSC_VERSION_REVISION@"
  			VALUE "InternalName", "@PACKAGE_NAME@"
@@ -349,70 +297,11 @@
  			VALUE "LegalTrademarks", ""
  			VALUE "PrivateBuild", ""
  			VALUE "ProductName", "@OPENSC_VS_FF_PRODUCT_NAME@"
---- a/src/ui/invisible_window.h
-+++ b/src/ui/invisible_window.h
-@@ -20,7 +20,7 @@
- 
- #include <windows.h>
- 
--HWND create_invisible_window(LPCTSTR lpszClassName,
-+static HWND create_invisible_window(LPCTSTR lpszClassName,
- 		LRESULT (CALLBACK* WndProc)(HWND, UINT, WPARAM, LPARAM),
- 		HINSTANCE hInstance)
- {
---- a/src/ui/notify.c
-+++ b/src/ui/notify.c
-@@ -66,6 +66,11 @@
- 
- #if defined(ENABLE_NOTIFY) && defined(_WIN32)
- 
-+#pragma push_macro("NTDDI_VERSION")
-+#undef NTDDI_VERSION
-+
-+#define NTDDI_VERSION 0x06000000
-+
- #include "common/compat_strlcpy.h"
- #include "invisible_window.h"
- #include "wchar_from_char_str.h"
-@@ -85,6 +90,11 @@
- // we need commctrl v6 for LoadIconMetric()
- #include <commctrl.h>
- 
-+static HMODULE comctl32 = NULL;
-+static HRESULT (*LoadIconMetricPtr)(HINSTANCE hinst, PCWSTR pszName, int lims, HICON *phico);
-+
-+#pragma pop_macro("NTDDI_VERSION")
-+
- LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
- {
- 	switch (message) {
-@@ -140,6 +150,13 @@
- 		return FALSE;
- 	}
- 
-+	if (comctl32 == NULL) {
-+		comctl32 = LoadLibrary("COMCTL32.DLL");
-+		if (comctl32 != NULL) {
-+			LoadIconMetricPtr = (void*)GetProcAddress(comctl32, "LoadIconMetric");
-+		}
-+	}
-+
- 	nid.cbSize = sizeof(NOTIFYICONDATA);
- 	nid.hWnd = sc_notify_hwnd;
- 	// add the icon, setting the icon, tooltip, and callback message.
-@@ -147,7 +164,10 @@
- 	nid.uFlags = NIF_ICON | NIF_TIP | NIF_MESSAGE | NIF_SHOWTIP | NIF_GUID;
- 	nid.guidItem = myGUID; 
- 	nid.uCallbackMessage = WMAPP_NOTIFYCALLBACK;
--	LoadIconMetric(sc_notify_instance, MAKEINTRESOURCEW(IDI_SMARTCARD), LIM_SMALL, &nid.hIcon);
-+	if (LoadIconMetricPtr != NULL)
-+		LoadIconMetricPtr(sc_notify_instance, MAKEINTRESOURCEW(IDI_SMARTCARD), LIM_SMALL, &nid.hIcon);
-+	else
-+		nid.hIcon = LoadIcon(sc_notify_instance, MAKEINTRESOURCE(IDI_SMARTCARD));
- 	if (GetModuleFileName(NULL, path, ARRAYSIZE(path))) {
- 		const char *basename = strrchr(path, '\\');
- 		if (basename) {
-@@ -160,7 +180,7 @@
+Index: opensc/src/ui/notify.c
+===================================================================
+--- opensc.orig/src/ui/notify.c
++++ opensc/src/ui/notify.c
+@@ -180,7 +180,7 @@ static BOOL AddNotificationIcon(void)
  				return FALSE;
  			}
  		}
@@ -421,9 +310,11 @@
  	} else {
  		strcpy(nid.szTip, PACKAGE_NAME);
  	}
---- a/src/ui/strings.c
-+++ b/src/ui/strings.c
-@@ -172,7 +172,7 @@
+Index: opensc/src/ui/strings.c
+===================================================================
+--- opensc.orig/src/ui/strings.c
++++ opensc/src/ui/strings.c
+@@ -172,7 +172,7 @@ const char *ui_get_str(struct sc_context
  		}
  #endif
  	}
@@ -432,9 +323,11 @@
  	/* load default strings */
  	switch (lang) {
  		case DE:
---- a/win32/versioninfo-customactions.rc.in
-+++ b/win32/versioninfo-customactions.rc.in
-@@ -21,7 +21,6 @@
+Index: opensc/win32/versioninfo-customactions.rc.in
+===================================================================
+--- opensc.orig/win32/versioninfo-customactions.rc.in
++++ opensc/win32/versioninfo-customactions.rc.in
+@@ -21,7 +21,6 @@ BEGIN
  			VALUE "CompanyName", "@OPENSC_VS_FF_COMPANY_NAME@"
  			VALUE "FileVersion", "@OPENSC_VERSION_MAJOR@.@OPENSC_VERSION_MINOR@.@OPENSC_VERSION_FIX@.@OPENSC_VERSION_REVISION@"
  			VALUE "InternalName", "@PACKAGE_NAME@"
@@ -442,9 +335,11 @@
  			VALUE "LegalTrademarks", ""
  			VALUE "PrivateBuild", ""
  			VALUE "ProductName", "@OPENSC_VS_FF_PRODUCT_NAME@"
---- a/win32/versioninfo.rc.in
-+++ b/win32/versioninfo.rc.in
-@@ -21,7 +21,6 @@
+Index: opensc/win32/versioninfo.rc.in
+===================================================================
+--- opensc.orig/win32/versioninfo.rc.in
++++ opensc/win32/versioninfo.rc.in
+@@ -21,7 +21,6 @@ BEGIN
  			VALUE "CompanyName", "@OPENSC_VS_FF_COMPANY_NAME@"
  			VALUE "FileVersion", "@OPENSC_VERSION_MAJOR@.@OPENSC_VERSION_MINOR@.@OPENSC_VERSION_FIX@.@OPENSC_VERSION_REVISION@"
  			VALUE "InternalName", "@PACKAGE_NAME@"
@@ -452,8 +347,10 @@
  			VALUE "LegalTrademarks", ""
  			VALUE "PrivateBuild", ""
  			VALUE "ProductName", "@OPENSC_VS_FF_PRODUCT_NAME@"
---- a/win32/winconfig.h.in
-+++ b/win32/winconfig.h.in
+Index: opensc/win32/winconfig.h.in
+===================================================================
+--- opensc.orig/win32/winconfig.h.in
++++ opensc/win32/winconfig.h.in
 @@ -56,7 +56,7 @@
  #define ENABLE_SHARED 1
  #define ENABLE_NOTIFY 1
@@ -472,3 +369,35 @@
  #endif
  
  #ifndef DEFAULT_PKCS11_PROVIDER
+Index: opensc/src/libopensc/reader-pcsc.c
+===================================================================
+--- opensc.orig/src/libopensc/reader-pcsc.c
++++ opensc/src/libopensc/reader-pcsc.c
+@@ -1629,8 +1629,10 @@ static int pcsc_wait_for_event(sc_contex
+ 			detected_hotplug = 1;
+ #else
+ 			rgReaderStates[num_watch].szReader = "\\\\?PnP?\\Notification";
+-			rgReaderStates[num_watch].dwCurrentState = SCARD_STATE_UNAWARE;
+-			rgReaderStates[num_watch].dwEventState = SCARD_STATE_UNAWARE;
++			/* Windows expects number of readers in high 16 bits,
++			 * Linux doesn't care what's in there. */
++			rgReaderStates[num_watch].dwCurrentState = (num_watch << 16) | SCARD_STATE_UNAWARE;
++			rgReaderStates[num_watch].dwEventState = (num_watch << 16) | SCARD_STATE_UNAWARE;
+ 			num_watch++;
+ 			sc_log(ctx, "Trying to detect new readers");
+ #endif
+@@ -1719,12 +1721,12 @@ static int pcsc_wait_for_event(sc_contex
+ 				} else {
+ 					sc_reader_t *reader = sc_ctx_get_reader_by_name(ctx, rsp->szReader);
+ 
+-					if ((state & SCARD_STATE_PRESENT) && !(prev_state & SCARD_STATE_PRESENT)) {
++					if ((state & SCARD_STATE_PRESENT) && !(state & SCARD_STATE_MUTE) && !(prev_state & SCARD_STATE_PRESENT)) {
+ 						sc_log(ctx, "card inserted event");
+ 						*event |= SC_EVENT_CARD_INSERTED;
+ 					}
+ 
+-					if ((prev_state & SCARD_STATE_PRESENT) && !(state & SCARD_STATE_PRESENT)) {
++					if ((prev_state & SCARD_STATE_PRESENT) && !(prev_state & SCARD_STATE_MUTE) && !(state & SCARD_STATE_PRESENT)) {
+ 						sc_log(ctx, "card removed event");
+ 						*event |= SC_EVENT_CARD_REMOVED;
+ 					}

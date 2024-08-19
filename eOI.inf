@@ -8,7 +8,7 @@ Class=SmartCard
 ClassGuid={990A2BD7-E738-46c7-B26F-1CF8FB9F1391}
 Provider=%ProviderName%
 CatalogFile=eOI.cat
-DriverVer=09/26/2023,0.0.0.0
+DriverVer=08/19/2024,0.0.0.0
 
 [Manufacturer]
 %ProviderName%=Minidriver,NTamd64.6.1,NTx86.6.1
