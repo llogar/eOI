@@ -63,4 +63,3 @@ Root: HKLM32; Subkey: Software\Microsoft\Cryptography\Calais\SmartCards\eOI (con
 [Run]
 Filename: {sys}\certutil.exe; WorkingDir: {app}\driver; Parameters: "-addstore Root CA.der"; StatusMsg: "Adding trusted publisher..."; Flags: waituntilterminated runhidden
 Filename: {sys}\pnputil.exe; WorkingDir: {app}\driver; Parameters: "/add-driver eOI.inf"; StatusMsg: "Installing eOI driver..."; Flags: waituntilterminated runhidden
-

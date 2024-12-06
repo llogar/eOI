@@ -1,10 +1,8 @@
-Index: openssl/crypto/conf/conf_mod.c
-===================================================================
---- openssl.orig/crypto/conf/conf_mod.c
-+++ openssl/crypto/conf/conf_mod.c
-@@ -683,8 +683,12 @@ char *CONF_get1_default_config_file(void
+--- a/crypto/conf/conf_mod.c
++++ b/crypto/conf/conf_mod.c
+@@ -705,8 +705,12 @@
+         return OPENSSL_strdup("");
  
-     t = X509_get_default_cert_area();
  #ifndef OPENSSL_SYS_VMS
 +#if defined(OPENSSL_SYS_WINDOWS) || defined(OPENSSL_SYS_WIN32) || defined(OPENSSL_SYS_MINGW64) || defined(OPENSSL_SYS_MINGW32)
 +    sep = "\\";
@@ -15,13 +13,11 @@ Index: openssl/crypto/conf/conf_mod.c
      size = strlen(t) + strlen(sep) + strlen(OPENSSL_CONF) + 1;
      file = OPENSSL_malloc(size);
  
-Index: openssl/crypto/cversion.c
-===================================================================
---- openssl.orig/crypto/cversion.c
-+++ openssl/crypto/cversion.c
-@@ -7,6 +7,12 @@
-  * https://www.openssl.org/source/license.html
-  */
+--- a/crypto/cversion.c
++++ b/crypto/cversion.c
+@@ -14,6 +14,12 @@
+ #include "internal/common.h"
+ #include "internal/thread_once.h"
  
 +#include <openssl/opensslconf.h>
 +
@@ -29,13 +25,13 @@ Index: openssl/crypto/cversion.c
 +#include <windows.h>
 +#endif
 +
- #include "internal/cryptlib.h"
- 
  #include "buildinf.h"
-@@ -64,7 +70,28 @@ const char *OpenSSL_version(int t)
-         return PLATFORM;
+ 
+ #undef OPENSSLDIR
+@@ -110,7 +116,28 @@
+ #else
      case OPENSSL_DIR:
- #ifdef OPENSSLDIR
+ # ifdef OPENSSLDIR
 +#if defined(OPENSSL_SYS_WINDOWS) || defined(OPENSSL_SYS_WIN32) || defined(OPENSSL_SYS_MINGW64) || defined(OPENSSL_SYS_MINGW32)
 +        static char temp[PATH_MAX + 1];
 +        long rc;
@@ -58,13 +54,11 @@ Index: openssl/crypto/cversion.c
 +#else
          return "OPENSSLDIR: \"" OPENSSLDIR "\"";
 +#endif
- #else
+ # else
          return "OPENSSLDIR: N/A";
- #endif
-Index: openssl/crypto/engine/eng_list.c
-===================================================================
---- openssl.orig/crypto/engine/eng_list.c
-+++ openssl/crypto/engine/eng_list.c
+ # endif
+--- a/crypto/engine/eng_list.c
++++ b/crypto/engine/eng_list.c
 @@ -11,6 +11,12 @@
  /* We need to use some engine deprecated APIs */
  #define OPENSSL_SUPPRESS_DEPRECATED
@@ -78,10 +72,10 @@ Index: openssl/crypto/engine/eng_list.c
  #include "eng_local.h"
  
  /*
-@@ -460,6 +466,25 @@ ENGINE *ENGINE_by_id(const char *id)
+@@ -460,6 +466,25 @@
      if (strcmp(id, "dynamic")) {
          if ((load_dir = ossl_safe_getenv("OPENSSL_ENGINES")) == NULL)
-             load_dir = ENGINESDIR;
+             load_dir = ossl_get_enginesdir();
 +#if defined(OPENSSL_SYS_WINDOWS) || defined(OPENSSL_SYS_WIN32) || defined(OPENSSL_SYS_MINGW64) || defined(OPENSSL_SYS_MINGW32)
 +        if (load_dir == NULL) {
 +            static char temp[PATH_MAX + 1];
@@ -104,11 +98,9 @@ Index: openssl/crypto/engine/eng_list.c
          iterator = ENGINE_by_id("dynamic");
          if (!iterator || !ENGINE_ctrl_cmd_string(iterator, "ID", id, 0) ||
              !ENGINE_ctrl_cmd_string(iterator, "DIR_LOAD", "2", 0) ||
-Index: openssl/crypto/rand/randfile.c
-===================================================================
---- openssl.orig/crypto/rand/randfile.c
-+++ openssl/crypto/rand/randfile.c
-@@ -312,8 +312,12 @@ const char *RAND_file_name(char *buf, si
+--- a/crypto/rand/randfile.c
++++ b/crypto/rand/randfile.c
+@@ -321,8 +321,12 @@
              return NULL;
          strcpy(buf, s);
  #ifndef OPENSSL_SYS_VMS
@@ -121,10 +113,8 @@ Index: openssl/crypto/rand/randfile.c
          strcat(buf, RFILE);
      }
  
-Index: openssl/crypto/x509/x509_def.c
-===================================================================
---- openssl.orig/crypto/x509/x509_def.c
-+++ openssl/crypto/x509/x509_def.c
+--- a/crypto/x509/x509_def.c
++++ b/crypto/x509/x509_def.c
 @@ -7,6 +7,12 @@
   * https://www.openssl.org/source/license.html
   */
@@ -136,116 +126,54 @@ Index: openssl/crypto/x509/x509_def.c
 +#endif
 +
  #include <stdio.h>
+ #include "internal/e_os.h"
  #include "internal/cryptlib.h"
- #include <openssl/crypto.h>
-@@ -14,22 +20,98 @@
- 
- const char *X509_get_default_private_dir(void)
+@@ -45,6 +51,8 @@
+ static CRYPTO_ONCE openssldir_setup_init = CRYPTO_ONCE_STATIC_INIT;
+ DEFINE_RUN_ONCE_STATIC(do_openssldir_setup)
  {
-+#if defined(OPENSSL_SYS_WINDOWS) || defined(OPENSSL_SYS_WIN32) || defined(OPENSSL_SYS_MINGW64) || defined(OPENSSL_SYS_MINGW32)
-+    static char temp[PATH_MAX + 1];
-+    long rc;
 +    HKEY hKey;
-+    rc = RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"Software\\eOI", 0, KEY_READ, &hKey);
-+    if (rc == ERROR_SUCCESS) {
++
+     get_windows_default_path(x509_private_dir, "\\private");
+     if (strlen(x509_private_dir) > 0)
+         x509_private_dirptr = x509_private_dir;
+@@ -61,6 +69,28 @@
+     if (strlen(x509_cert_file) > 0)
+         x509_cert_fileptr = x509_cert_file;
+ 
++    if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"Software\\eOI", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
 +        WCHAR wtemp[PATH_MAX + 1];
 +        DWORD wtemp_len = PATH_MAX;
-+        rc = RegQueryValueExW(hKey, L"PrivateDir", NULL, NULL, (LPBYTE) wtemp, &wtemp_len);
-+        if (rc == ERROR_SUCCESS) {
-+            RegCloseKey(hKey);
-+            WideCharToMultiByte(CP_ACP, 0, wtemp, wtemp_len, temp, PATH_MAX, NULL, NULL);
-+            return temp;
++        if (RegQueryValueExW(hKey, L"PrivateDir", NULL, NULL, (LPBYTE) wtemp, &wtemp_len) != ERROR_SUCCESS) {
++            WideCharToMultiByte(CP_ACP, 0, wtemp, wtemp_len, x509_private_dir, PATH_MAX, NULL, NULL);
++            x509_private_dirptr = x509_private_dir;
++        }
++        if (RegQueryValueExW(hKey, L"CertArea", NULL, NULL, (LPBYTE) wtemp, &wtemp_len) != ERROR_SUCCESS) {
++            WideCharToMultiByte(CP_ACP, 0, wtemp, wtemp_len, x509_cert_area, PATH_MAX, NULL, NULL);
++            x509_cert_areaptr = x509_cert_area;
++        }
++        if (RegQueryValueExW(hKey, L"CertDir", NULL, NULL, (LPBYTE) wtemp, &wtemp_len) != ERROR_SUCCESS) {
++            WideCharToMultiByte(CP_ACP, 0, wtemp, wtemp_len, x509_cert_dir, PATH_MAX, NULL, NULL);
++            x509_cert_dirptr = x509_cert_dir;
++        }
++        if (RegQueryValueExW(hKey, L"CertFile", NULL, NULL, (LPBYTE) wtemp, &wtemp_len) != ERROR_SUCCESS) {
++            WideCharToMultiByte(CP_ACP, 0, wtemp, wtemp_len, x509_cert_file, PATH_MAX, NULL, NULL);
++            x509_cert_fileptr = x509_cert_file;
 +        }
 +        RegCloseKey(hKey);
 +    }
-+    return "private";
-+#else
-     return X509_PRIVATE_DIR;
-+#endif
++
+     return 1;
  }
- 
- const char *X509_get_default_cert_area(void)
- {
-+#if defined(OPENSSL_SYS_WINDOWS) || defined(OPENSSL_SYS_WIN32) || defined(OPENSSL_SYS_MINGW64) || defined(OPENSSL_SYS_MINGW32)
-+    static char temp[PATH_MAX + 1];
-+    long rc;
-+    HKEY hKey;
-+    rc = RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"Software\\eOI", 0, KEY_READ, &hKey);
-+    if (rc == ERROR_SUCCESS) {
-+        WCHAR wtemp[PATH_MAX + 1];
-+        DWORD wtemp_len = PATH_MAX;
-+        rc = RegQueryValueExW(hKey, L"CertArea", NULL, NULL, (LPBYTE) wtemp, &wtemp_len);
-+        if (rc == ERROR_SUCCESS) {
-+            RegCloseKey(hKey);
-+            WideCharToMultiByte(CP_ACP, 0, wtemp, wtemp_len, temp, PATH_MAX, NULL, NULL);
-+            return temp;
-+        }
-+        RegCloseKey(hKey);
-+    }
-+    return "conf";
-+#else
-     return X509_CERT_AREA;
-+#endif
- }
- 
- const char *X509_get_default_cert_dir(void)
- {
-+#if defined(OPENSSL_SYS_WINDOWS) || defined(OPENSSL_SYS_WIN32) || defined(OPENSSL_SYS_MINGW64) || defined(OPENSSL_SYS_MINGW32)
-+    static char temp[PATH_MAX + 1];
-+    long rc;
-+    HKEY hKey;
-+    rc = RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"Software\\eOI", 0, KEY_READ, &hKey);
-+    if (rc == ERROR_SUCCESS) {
-+        WCHAR wtemp[PATH_MAX + 1];
-+        DWORD wtemp_len = PATH_MAX;
-+        rc = RegQueryValueExW(hKey, L"CertArea", NULL, NULL, (LPBYTE) wtemp, &wtemp_len);
-+        if (rc == ERROR_SUCCESS) {
-+            RegCloseKey(hKey);
-+            WideCharToMultiByte(CP_ACP, 0, wtemp, wtemp_len, temp, PATH_MAX, NULL, NULL);
-+            return temp;
-+        }
-+        RegCloseKey(hKey);
-+    }
-+    return "certs";
-+#else
-     return X509_CERT_DIR;
-+#endif
- }
- 
- const char *X509_get_default_cert_file(void)
- {
-+#if defined(OPENSSL_SYS_WINDOWS) || defined(OPENSSL_SYS_WIN32) || defined(OPENSSL_SYS_MINGW64) || defined(OPENSSL_SYS_MINGW32)
-+    static char temp[PATH_MAX + 1];
-+    long rc;
-+    HKEY hKey;
-+    rc = RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"Software\\eOI", 0, KEY_READ, &hKey);
-+    if (rc == ERROR_SUCCESS) {
-+        WCHAR wtemp[PATH_MAX + 1];
-+        DWORD wtemp_len = PATH_MAX;
-+        rc = RegQueryValueExW(hKey, L"CertArea", NULL, NULL, (LPBYTE) wtemp, &wtemp_len);
-+        if (rc == ERROR_SUCCESS) {
-+            RegCloseKey(hKey);
-+            WideCharToMultiByte(CP_ACP, 0, wtemp, wtemp_len, temp, PATH_MAX, NULL, NULL);
-+            return temp;
-+        }
-+        RegCloseKey(hKey);
-+    }
-+    return "certs.pem";
-+#else
-     return X509_CERT_FILE;
-+#endif
- }
- 
- const char *X509_get_default_cert_dir_env(void)
-Index: openssl/exporters/pkg-config/libcrypto.pc.in
-===================================================================
---- openssl.orig/exporters/pkg-config/libcrypto.pc.in
-+++ openssl/exporters/pkg-config/libcrypto.pc.in
-@@ -10,6 +10,6 @@ modulesdir=${libdir}/{- $OpenSSL::safe::
+ #endif
+--- a/exporters/pkg-config/libcrypto.pc.in
++++ b/exporters/pkg-config/libcrypto.pc.in
+@@ -17,7 +17,7 @@
  Name: OpenSSL-libcrypto
  Description: OpenSSL cryptography library
  Version: {- $OpenSSL::safe::installdata::VERSION -}
 -Libs: -L${libdir} -lcrypto
 +Libs: -L${libdir} -leOI32
  Libs.private: {- join(' ', @OpenSSL::safe::installdata::LDLIBS) -}
- Cflags: -I${includedir}
+ Cflags:{- $OUT = ' -I${includedir}';
+           if (scalar @OpenSSL::safe::installdata::INCLUDEDIR_REL_PREFIX > 1) {

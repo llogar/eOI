@@ -1,8 +1,6 @@
-Index: opensc/src/minidriver/minidriver.c
-===================================================================
---- opensc.orig/src/minidriver/minidriver.c
-+++ opensc/src/minidriver/minidriver.c
-@@ -826,7 +826,7 @@ static BOOL
+--- a/src/minidriver/minidriver.c
++++ b/src/minidriver/minidriver.c
+@@ -826,7 +826,7 @@
  md_is_guid_as_label(PCARD_DATA pCardData)
  {
  	logprintf(pCardData, 2, "Is GUID has to be used as label of crypto objects?\n");

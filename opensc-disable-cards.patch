@@ -1,8 +1,6 @@
-Index: opensc/etc/opensc.conf.example.in
-===================================================================
---- opensc.orig/etc/opensc.conf.example.in
-+++ opensc/etc/opensc.conf.example.in
-@@ -46,18 +46,6 @@ app default {
+--- a/etc/opensc.conf.example.in
++++ b/etc/opensc.conf.example.in
+@@ -46,18 +46,6 @@
  	# Default: empty
  	# ignored_readers = "CardMan 1021", "SPR 532";
  
@@ -21,7 +19,7 @@ Index: opensc/etc/opensc.conf.example.in
  	# The following section shows definitions for PC/SC readers.
  	reader_driver pcsc {
  		# Limit command and response sizes. Some Readers don't propagate their
-@@ -110,29 +98,6 @@ app default {
+@@ -110,29 +98,6 @@
  		# provider_library = @DEFAULT_PCSC_PROVIDER@
  	}
  
@@ -51,7 +49,7 @@ Index: opensc/etc/opensc.conf.example.in
  	# Allowlist of card drivers to load at start-up
  	#
  	# The supported internal card driver names can be retrieved
-@@ -149,67 +114,7 @@ app default {
+@@ -149,67 +114,7 @@
  	# Default: internal
  	# NOTE: When "internal" keyword is used, must be last entry
  	#
@@ -120,7 +118,7 @@ Index: opensc/etc/opensc.conf.example.in
  
  	card_driver eoi {
  		# CAN is required to establish connection
-@@ -226,690 +131,6 @@ app default {
+@@ -226,690 +131,6 @@
  		# in the 'pkcs11' section below
  	}
  
@@ -811,7 +809,7 @@ Index: opensc/etc/opensc.conf.example.in
  	# Below are the framework specific configuration blocks.
  
  	# PKCS #15
-@@ -972,17 +193,6 @@ app default {
+@@ -972,17 +193,6 @@
  		# Default: internal;
  		# builtin_emulators = old, internal;
  
@@ -829,7 +827,7 @@ Index: opensc/etc/opensc.conf.example.in
  		# Enable initialization and card recognition in PKCS#11 layer.
  		# Default: no
  		# pkcs11_enable_InitToken = yes;
-@@ -998,27 +208,6 @@ app default {
+@@ -998,27 +208,6 @@
  		#            default 'false'
  		# - user_pin and sign_pin: labels of PIN objects that will be used as
  		#            user & sign PINs. Otherwise the first suitable one will be used.
@@ -857,7 +855,7 @@ Index: opensc/etc/opensc.conf.example.in
  		# Slovenian eID - low level (pinless, "Prijava brez PIN-a")
  		application E828BD080F014E585031 {
  			model = "ChipDocLite";
-@@ -1043,7 +232,7 @@ app opensc-pkcs11 {
+@@ -1043,7 +232,7 @@
  		# If there are more slots than defined here,
  		# the remaining slots will be hidden from PKCS#11.
  		# Default: 16
@@ -866,7 +864,7 @@ Index: opensc/etc/opensc.conf.example.in
  
  		# Maximum number of slots per smart card.
  		# If the card has fewer keys than defined here,
-@@ -1126,7 +315,7 @@ app opensc-pkcs11 {
+@@ -1126,7 +315,7 @@
  		#       #   modes 00 and 01 of ISO command 'RESET RETRY COUNTER'. --vt
  		#
  		# Default: none
@@ -875,7 +873,7 @@ Index: opensc/etc/opensc.conf.example.in
  
  		# Create slot for unblocking PIN with PUK
  		# This way PKCS#11 API can be used to login with PUK and
-@@ -1160,34 +349,3 @@ app opensc-pkcs11 {
+@@ -1160,34 +349,3 @@
  		# create_slots_for_pins = "user"
  	}
  }
@@ -910,11 +908,9 @@ Index: opensc/etc/opensc.conf.example.in
 -# Used by OpenSC minidriver on Windows only
 -app cardmod {
 -}
-Index: opensc/src/libopensc/ctx.c
-===================================================================
---- opensc.orig/src/libopensc/ctx.c
-+++ opensc/src/libopensc/ctx.c
-@@ -106,61 +106,61 @@ static const struct _sc_driver_entry int
+--- a/src/libopensc/ctx.c
++++ b/src/libopensc/ctx.c
+@@ -106,61 +106,61 @@
  	/* The card handled by skeid shares the ATR with other cards running CardOS 5.4.
  	 * In order to prevent the cardos driver from matching skeid cards, skeid driver
  	 * precedes cardos and matches no other CardOS 5.4 card. */
@@ -1010,7 +1006,7 @@ Index: opensc/src/libopensc/ctx.c
  #if defined(ENABLE_SM) && defined(ENABLE_OPENPACE)
  	{ "eOI",	(void *(*)(void)) sc_get_eoi_driver },
  #endif
-@@ -171,11 +171,11 @@ static const struct _sc_driver_entry int
+@@ -171,11 +171,11 @@
  };
  
  static const struct _sc_driver_entry old_card_drivers[] = {
@@ -1027,11 +1023,9 @@ Index: opensc/src/libopensc/ctx.c
  	{ NULL, NULL }
  };
  // clang-format on
-Index: opensc/src/libopensc/pkcs15-syn.c
-===================================================================
---- opensc.orig/src/libopensc/pkcs15-syn.c
-+++ opensc/src/libopensc/pkcs15-syn.c
-@@ -37,37 +37,37 @@
+--- a/src/libopensc/pkcs15-syn.c
++++ b/src/libopensc/pkcs15-syn.c
+@@ -37,38 +37,38 @@
  
  // clang-format off
  struct sc_pkcs15_emulator_handler builtin_emulators[] = {
@@ -1082,6 +1076,8 @@ Index: opensc/src/libopensc/pkcs15-syn.c
 +//	{ "nqapplet",   sc_pkcs15emu_nqapplet_init_ex },
 +//	{ "esign",      sc_pkcs15emu_starcos_esign_init_ex },
  	{ "eOI",        sc_pkcs15emu_eoi_init_ex },
+-	{ "dtrust",     sc_pkcs15emu_dtrust_init_ex },
++//	{ "dtrust",     sc_pkcs15emu_dtrust_init_ex },
  	{ NULL, NULL }
  };
  

@@ -1,8 +1,6 @@
-Index: openssl/apps/openssl.c
-===================================================================
---- openssl.orig/apps/openssl.c
-+++ openssl/apps/openssl.c
-@@ -22,6 +22,7 @@
+--- a/apps/openssl.c
++++ b/apps/openssl.c
+@@ -24,6 +24,7 @@
  # include <openssl/engine.h>
  #endif
  #include <openssl/err.h>
@@ -10,7 +8,7 @@ Index: openssl/apps/openssl.c
  /* Needed to get the other O_xxx flags. */
  #ifdef OPENSSL_SYS_VMS
  # include <unixio.h>
-@@ -296,6 +297,9 @@ int main(int argc, char *argv[])
+@@ -298,6 +299,9 @@
          argv[0] = pname;
      }
  
@@ -20,12 +18,10 @@ Index: openssl/apps/openssl.c
      /*
       * If there's no command, assume "help". If there's an override for help
       * or version run those, otherwise run the command given.
-Index: openssl/crypto/provider_core.c
-===================================================================
---- openssl.orig/crypto/provider_core.c
-+++ openssl/crypto/provider_core.c
-@@ -34,6 +34,10 @@
- # include <openssl/self_test.h>
+--- a/crypto/provider_core.c
++++ b/crypto/provider_core.c
+@@ -35,6 +35,10 @@
+ # include <openssl/indicator.h>
  #endif
  
 +#if defined(OPENSSL_SYS_WINDOWS) || defined(OPENSSL_SYS_WIN32) || defined(OPENSSL_SYS_MINGW64) || defined(OPENSSL_SYS_MINGW32)
@@ -35,7 +31,7 @@ Index: openssl/crypto/provider_core.c
  /*
   * This file defines and uses a number of different structures:
   *
-@@ -919,6 +923,25 @@ static int provider_init(OSSL_PROVIDER *
+@@ -920,6 +924,25 @@
  
              if (load_dir == NULL) {
                  load_dir = ossl_safe_getenv("OPENSSL_MODULES");
@@ -59,5 +55,5 @@ Index: openssl/crypto/provider_core.c
 +                }
 +#endif
                  if (load_dir == NULL)
-                     load_dir = MODULESDIR;
+                     load_dir = ossl_get_modulesdir();
              }
